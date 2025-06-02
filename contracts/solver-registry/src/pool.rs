@@ -86,7 +86,9 @@ impl Contract {
 
 impl Contract {
     pub(crate) fn get_pool_account_id(&self, pool_id: u32) -> AccountId {
-        format!("pool-{}.{}", pool_id, env::current_account_id()).parse().unwrap()
+        format!("pool-{}.{}", pool_id, env::current_account_id())
+            .parse()
+            .unwrap()
     }
 
     pub(crate) fn has_pool(&self, pool_id: u32) -> bool {
