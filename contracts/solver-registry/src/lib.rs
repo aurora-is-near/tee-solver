@@ -1,0 +1,119 @@
+use dcap_qvl::{verify, QuoteCollateralV3};
+use hex::{decode, encode};
+use near_sdk::{
+    env,
+    env::block_timestamp,
+    ext_contract, log, near, require,
+    store::{IterableMap, IterableSet, Vector},
+    AccountId, CryptoHash, Gas, PanicOnDefault, Promise, PublicKey,
+};
+
+mod collateral;
+mod events;
+mod pool;
+mod token_receiver;
+mod upgrade;
+mod view;
+
+#[near(serializers = [json, borsh])]
+#[derive(Clone)]
+pub struct Worker {
+    pool_id: u64,
+    checksum: String,
+    codehash: String,
+}
+
+#[near(contract_state)]
+#[derive(PanicOnDefault)]
+pub struct Contract {
+    owner_id: AccountId,
+    intents_contract_id: AccountId,
+    pools: Vector<Pool>,
+    approved_codehashes: IterableSet<String>,
+    worker_by_account_id: IterableMap<AccountId, Worker>,
+}
+
+#[near]
+#[derive(BorshStorageKey)]
+pub enum Prefix {
+    Pools,
+    ApprovedCodeHashes,
+    WorkerByAccountId,
+}
+
+#[ext_contract(ext_intents_vault)]
+trait IntentsVaultContract {
+    fn add_public_key(intents_contract_id: AccountId, public_key: PublicKey);
+}
+
+#[near]
+impl Contract {
+    #[init]
+    #[private]
+    pub fn new(owner_id: AccountId, intents_contract_id: AccountId) -> Self {
+        Self {
+            owner_id,
+            intents_contract_id,
+            pools: Vector::new(Prefix::Pools),
+            approved_codehashes: IterableSet::new(Prefix::ApprovedCodeHashes),
+            worker_by_account_id: IterableMap::new(Prefix::WorkerByAccountId),
+        }
+    }
+
+    pub fn register_worker(
+        &mut self,
+        pool_id: u64,
+        quote_hex: String,
+        collateral: String,
+        checksum: String,
+        tcb_info: String,
+    ) -> Promise {
+        require!(self.has_pool(pool_id), "Pool not found");
+
+        let collateral = collateral::get_collateral(collateral);
+        let quote = decode(quote_hex).unwrap();
+        let now = block_timestamp() / 1000000000;
+        let result = verify::verify(&quote, &collateral, now).expect("report is not verified");
+        let rtmr3 = encode(result.report.as_td10().unwrap().rt_mr3.to_vec());
+        let codehash = collateral::verify_codehash(tcb_info, rtmr3);
+
+        // only allow workers with approved code hashes to register
+        require!(self.approved_codehashes.contains(&codehash));
+
+        log!("verify result: {:?}", result);
+
+        // verify the public key of the worker is the same as the implicit account
+        let public_key = env::signer_account_pk();
+
+        let predecessor = env::predecessor_account_id();
+        self.worker_by_account_id.insert(
+            predecessor,
+            Worker {
+                pool_id,
+                checksum,
+                codehash,
+            },
+        );
+
+        // add the public key to the intents vault
+        ext_intents_vault::ext(self.get_pool_account_id(pool_id))
+            .add_public_key(self.intents_contract_id, public_key)
+            .into()
+    }
+}
+
+impl Contract {
+    fn require_owner(&mut self) {
+        require!(env::predecessor_account_id() == self.owner_id);
+    }
+
+    fn approve_codehash(&mut self, codehash: String) {
+        self.require_owner();
+        self.approved_codehashes.insert(codehash);
+    }
+
+    fn require_approved_codehash(&mut self) {
+        let worker = self.get_worker(env::predecessor_account_id());
+        require!(self.approved_codehashes.contains(&worker.codehash));
+    }
+}
