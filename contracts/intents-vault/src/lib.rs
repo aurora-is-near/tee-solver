@@ -6,6 +6,7 @@ trait IntentsContract {
     fn add_public_key(public_key: PublicKey);
 }
 
+#[derive(Default)]
 #[near(contract_state)]
 pub struct Contract {}
 

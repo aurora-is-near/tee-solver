@@ -53,7 +53,7 @@ impl Contract {
         Promise::new(pool_account_id.clone())
             .create_account()
             .transfer(CREATE_POOL_STORAGE_DEPOSIT)
-            .deploy_contract(b"pool.wasm");
+            .deploy_contract(include_bytes!("../../intents-vault/res/intents_vault.wasm").to_vec());
 
         pool_id
     }
