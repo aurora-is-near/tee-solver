@@ -1,1 +1,1 @@
-# tee-solver
+# NEAR Intents TEE Solver

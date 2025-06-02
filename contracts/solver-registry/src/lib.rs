@@ -1,24 +1,28 @@
 use dcap_qvl::{verify, QuoteCollateralV3};
 use hex::{decode, encode};
 use near_sdk::{
-    env,
-    env::block_timestamp,
+    assert_one_yocto,
+    env::{self, block_timestamp},
     ext_contract, log, near, require,
     store::{IterableMap, IterableSet, Vector},
-    AccountId, CryptoHash, Gas, PanicOnDefault, Promise, PublicKey,
+    AccountId, PanicOnDefault, Promise, PublicKey,
 };
+
+use crate::pool::*;
+use crate::types::*;
 
 mod collateral;
 mod events;
 mod pool;
 mod token_receiver;
+mod types;
 mod upgrade;
 mod view;
 
 #[near(serializers = [json, borsh])]
 #[derive(Clone)]
 pub struct Worker {
-    pool_id: u64,
+    pool_id: u32,
     checksum: String,
     codehash: String,
 }
@@ -31,14 +35,6 @@ pub struct Contract {
     pools: Vector<Pool>,
     approved_codehashes: IterableSet<String>,
     worker_by_account_id: IterableMap<AccountId, Worker>,
-}
-
-#[near]
-#[derive(BorshStorageKey)]
-pub enum Prefix {
-    Pools,
-    ApprovedCodeHashes,
-    WorkerByAccountId,
 }
 
 #[ext_contract(ext_intents_vault)]
@@ -62,7 +58,7 @@ impl Contract {
 
     pub fn register_worker(
         &mut self,
-        pool_id: u64,
+        pool_id: u32,
         quote_hex: String,
         collateral: String,
         checksum: String,
@@ -82,7 +78,7 @@ impl Contract {
 
         log!("verify result: {:?}", result);
 
-        // verify the public key of the worker is the same as the implicit account
+        // TODO: verify predecessor implicit account is derived from this public key
         let public_key = env::signer_account_pk();
 
         let predecessor = env::predecessor_account_id();
@@ -97,18 +93,19 @@ impl Contract {
 
         // add the public key to the intents vault
         ext_intents_vault::ext(self.get_pool_account_id(pool_id))
-            .add_public_key(self.intents_contract_id, public_key)
+            .add_public_key(self.intents_contract_id.clone(), public_key)
             .into()
     }
 }
 
 impl Contract {
-    fn require_owner(&mut self) {
+    fn assert_owner(&mut self) {
+        assert_one_yocto();
         require!(env::predecessor_account_id() == self.owner_id);
     }
 
     fn approve_codehash(&mut self, codehash: String) {
-        self.require_owner();
+        self.assert_owner();
         self.approved_codehashes.insert(codehash);
     }
 
