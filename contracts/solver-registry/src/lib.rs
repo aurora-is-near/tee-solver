@@ -101,7 +101,6 @@ impl Contract {
 
 impl Contract {
     fn assert_owner(&mut self) {
-        assert_one_yocto();
         require!(env::predecessor_account_id() == self.owner_id);
     }
 
