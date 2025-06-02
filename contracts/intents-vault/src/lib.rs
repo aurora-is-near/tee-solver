@@ -26,7 +26,7 @@ impl Contract {
 }
 
 impl Contract {
-    fn require_parent_account(&mut self) {
+    fn require_parent_account(&self) {
         let contract_id = env::current_account_id().to_string();
         let parent_account_id = contract_id.split_once('.').expect("Invalid contract ID").1;
         require!(env::predecessor_account_id() == parent_account_id);

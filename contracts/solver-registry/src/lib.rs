@@ -37,6 +37,7 @@ pub struct Contract {
     worker_by_account_id: IterableMap<AccountId, Worker>,
 }
 
+#[allow(dead_code)]
 #[ext_contract(ext_intents_vault)]
 trait IntentsVaultContract {
     fn add_public_key(intents_contract_id: AccountId, public_key: PublicKey);
