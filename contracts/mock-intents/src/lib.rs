@@ -1,6 +1,8 @@
-use std::collections::HashSet;
-use near_sdk::{assert_one_yocto, env, near, AccountId, BorshStorageKey, PublicKey, PanicOnDefault};
 use near_sdk::store::LookupMap;
+use near_sdk::{
+    assert_one_yocto, env, near, AccountId, BorshStorageKey, PanicOnDefault, PublicKey,
+};
+use std::collections::HashSet;
 
 #[derive(PanicOnDefault)]
 #[near(contract_state)]
@@ -11,7 +13,7 @@ pub struct Contract {
 #[near]
 #[derive(BorshStorageKey)]
 pub enum Prefix {
-    PublicKeys
+    PublicKeys,
 }
 
 #[near]
@@ -20,15 +22,12 @@ impl Contract {
     #[private]
     pub fn new() -> Self {
         Self {
-            public_keys: LookupMap::new(Prefix::PublicKeys)
+            public_keys: LookupMap::new(Prefix::PublicKeys),
         }
     }
 
     #[payable]
-    pub fn add_public_key(
-        &mut self,
-        public_key: PublicKey,
-    ) {
+    pub fn add_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
 
         let account_id = env::predecessor_account_id();
@@ -42,6 +41,9 @@ impl Contract {
     }
 
     fn internal_get_account(&self, account_id: &AccountId) -> HashSet<PublicKey> {
-        self.public_keys.get(account_id).unwrap_or(&HashSet::new()).clone()
+        self.public_keys
+            .get(account_id)
+            .unwrap_or(&HashSet::new())
+            .clone()
     }
 }

@@ -1,10 +1,13 @@
 use near_sdk::json_types::U128;
 use near_sdk::store::LookupMap;
-use near_sdk::{near, require, AccountId, NearToken};
+use near_sdk::{near, require, AccountId, Gas, NearToken, PromiseError, PromiseOrValue};
 
+use crate::events::Event;
 use crate::*;
 
-const CREATE_POOL_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);
+const CREATE_POOL_STORAGE_DEPOSIT: NearToken =
+    NearToken::from_yoctonear(1_500_000_000_000_000_000_000_000); // 1.5 NEAR
+const GAS_CREATE_POOL_CALLBACK: Gas = Gas::from_tgas(10);
 
 #[near(serializers = [borsh])]
 pub struct Pool {
@@ -13,7 +16,7 @@ pub struct Pool {
     /// How much NEAR this contract has.
     pub amounts: Vec<Balance>,
     /// Fee charged for swap in basis points
-    pub fee: u64,
+    pub fee: u32,
     /// Shares of the pool by liquidity providers.
     pub shares: LookupMap<AccountId, Balance>,
     /// Total number of shares.
@@ -21,7 +24,7 @@ pub struct Pool {
 }
 
 impl Pool {
-    pub fn new(token_ids: Vec<AccountId>, fee: u64) -> Self {
+    pub fn new(token_ids: Vec<AccountId>, fee: u32) -> Self {
         require!(token_ids.len() == 2, "Must have exactly 2 tokens");
         require!(fee < 10_000, "Fee must be less than 100%");
 
@@ -37,25 +40,60 @@ impl Pool {
 
 #[near]
 impl Contract {
+    /// Create a new liquidity pool for the given NEP-141 token IDs with fee in basis points
     #[payable]
-    pub fn create_liquidity_pool(&mut self, token_ids: Vec<AccountId>, fee: u64) -> u32 {
-        require!(token_ids.len() == 2, "Must have exactly 2 tokens");
-        require!(fee <= 10000, "Fee must be less than or equal to 100%");
+    pub fn create_liquidity_pool(
+        &mut self,
+        token_ids: Vec<AccountId>,
+        fee: u32,
+    ) -> PromiseOrValue<Option<u32>> {
+        require!(
+            env::attached_deposit() >= CREATE_POOL_STORAGE_DEPOSIT,
+            "Not enough attached deposit"
+        );
 
+        // Get new pool ID
         let pool_id = self.pools.len();
-        let pool = Pool::new(token_ids, fee);
-        self.pools.push(pool);
-        self.pools.flush();
 
-        // TODO: create sub account for managing intents assets
-
+        // Create sub account for managing liquidity pool's assets in NEAR Intents
         let pool_account_id = self.get_pool_account_id(pool_id);
         Promise::new(pool_account_id.clone())
             .create_account()
             .transfer(CREATE_POOL_STORAGE_DEPOSIT)
-            .deploy_contract(include_bytes!("../../intents-vault/res/intents_vault.wasm").to_vec());
+            .deploy_contract(include_bytes!("../../intents-vault/res/intents_vault.wasm").to_vec())
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(GAS_CREATE_POOL_CALLBACK)
+                    .on_create_liquidity_pool_account(pool_id, token_ids, fee),
+            )
+            .into()
+    }
 
-        pool_id
+    #[private]
+    pub fn on_create_liquidity_pool_account(
+        &mut self,
+        pool_id: u32,
+        token_ids: Vec<AccountId>,
+        fee: u32,
+        #[callback_result] call_result: Result<(), PromiseError>,
+    ) -> Option<u32> {
+        if call_result.is_err() {
+            None
+        } else {
+            // Add the new liquidity pool
+            let pool = Pool::new(token_ids.clone(), fee);
+            self.pools.push(pool);
+            self.pools.flush();
+
+            Event::CreateLiquidityPool {
+                pool_id: &pool_id,
+                token_ids: &token_ids,
+                fee: &fee,
+            }
+            .emit();
+
+            Some(pool_id)
+        }
     }
 
     #[payable]

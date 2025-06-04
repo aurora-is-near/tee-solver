@@ -1,16 +1,13 @@
 use dcap_qvl::{verify, QuoteCollateralV3};
 use hex::{decode, encode};
 use near_sdk::{
-    assert_one_yocto,
-    env::{self, block_timestamp},
-    ext_contract, log, near, require,
-    store::{IterableMap, IterableSet, Vector},
-    AccountId, PanicOnDefault, Promise, PublicKey,
+    assert_one_yocto, env::{self, block_timestamp}, ext_contract, log, near, require, store::{IterableMap, IterableSet, Vector}, AccountId, NearToken, PanicOnDefault, Promise, PublicKey
 };
 
 use crate::pool::*;
 use crate::types::*;
 
+mod admin;
 mod collateral;
 mod events;
 mod pool;
@@ -57,6 +54,7 @@ impl Contract {
         }
     }
 
+    #[payable]
     pub fn register_worker(
         &mut self,
         pool_id: u32,
@@ -65,6 +63,7 @@ impl Contract {
         checksum: String,
         tcb_info: String,
     ) -> Promise {
+        assert_one_yocto();
         require!(self.has_pool(pool_id), "Pool not found");
 
         let collateral = collateral::get_collateral(collateral);
@@ -75,7 +74,7 @@ impl Contract {
         let codehash = collateral::verify_codehash(tcb_info, rtmr3);
 
         // only allow workers with approved code hashes to register
-        require!(self.approved_codehashes.contains(&codehash));
+        self.assert_approved_codehash(&codehash);
 
         log!("verify result: {:?}", result);
 
@@ -94,23 +93,22 @@ impl Contract {
 
         // add the public key to the intents vault
         ext_intents_vault::ext(self.get_pool_account_id(pool_id))
+            .with_attached_deposit(NearToken::from_yoctonear(1))
             .add_public_key(self.intents_contract_id.clone(), public_key)
             .into()
+    }
+
+    pub fn require_approved_codehash(&self) {
+        let worker = self.get_worker(env::predecessor_account_id());
+        self.assert_approved_codehash(&worker.codehash);
     }
 }
 
 impl Contract {
-    fn assert_owner(&mut self) {
-        require!(env::predecessor_account_id() == self.owner_id);
-    }
-
-    fn approve_codehash(&mut self, codehash: String) {
-        self.assert_owner();
-        self.approved_codehashes.insert(codehash);
-    }
-
-    fn require_approved_codehash(&mut self) {
-        let worker = self.get_worker(env::predecessor_account_id());
-        require!(self.approved_codehashes.contains(&worker.codehash));
+    fn assert_approved_codehash(&self, codehash: &String) {
+        require!(
+            self.approved_codehashes.contains(codehash),
+            "Invalid code hash"
+        );
     }
 }

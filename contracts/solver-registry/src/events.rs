@@ -1,7 +1,7 @@
 use near_sdk::json_types::{U128, U64};
 use near_sdk::serde::Serialize;
 use near_sdk::serde_json::json;
-use near_sdk::{log, AccountId};
+use near_sdk::{log, AccountId, PublicKey};
 
 pub const EVENT_STANDARD: &str = "solver-registry";
 pub const EVENT_STANDARD_VERSION: &str = "1.0.0";
@@ -17,19 +17,21 @@ pub const EVENT_STANDARD_VERSION: &str = "1.0.0";
 pub enum Event<'a> {
     WorkerRegistered {
         worker_id: &'a AccountId,
+        public_key: &'a PublicKey,
+        pool_id: &'a u32,
     },
     CreateLiquidityPool {
-        pool_id: &'a AccountId,
+        pool_id: &'a u32,
         token_ids: &'a Vec<AccountId>,
-        fee: &'a U64,
+        fee: &'a u32,
     },
     AddLiquidity {
-        pool_id: &'a AccountId,
+        pool_id: &'a u32,
         account_id: &'a AccountId,
         amounts: &'a Vec<U128>,
     },
     RemoveLiquidity {
-        pool_id: &'a AccountId,
+        pool_id: &'a u32,
         account_id: &'a AccountId,
         amounts: &'a Vec<U128>,
     },
