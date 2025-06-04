@@ -1,7 +1,11 @@
 use dcap_qvl::{verify, QuoteCollateralV3};
 use hex::{decode, encode};
 use near_sdk::{
-    assert_one_yocto, env::{self, block_timestamp}, ext_contract, log, near, require, store::{IterableMap, IterableSet, Vector}, AccountId, NearToken, PanicOnDefault, Promise, PublicKey
+    assert_one_yocto,
+    env::{self, block_timestamp},
+    ext_contract, log, near, require,
+    store::{IterableMap, IterableSet, Vector},
+    AccountId, NearToken, PanicOnDefault, Promise, PublicKey,
 };
 
 use crate::pool::*;
