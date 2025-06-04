@@ -74,7 +74,7 @@ impl Contract {
         let quote = decode(quote_hex).unwrap();
         let now = block_timestamp() / 1000000000;
         let result = verify::verify(&quote, &collateral, now).expect("report is not verified");
-        let rtmr3 = encode(result.report.as_td10().unwrap().rt_mr3.to_vec());
+        let rtmr3 = encode(result.report.as_td10().unwrap().rt_mr3);
         let codehash = collateral::verify_codehash(tcb_info, rtmr3);
 
         // only allow workers with approved code hashes to register
@@ -99,7 +99,6 @@ impl Contract {
         ext_intents_vault::ext(self.get_pool_account_id(pool_id))
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .add_public_key(self.intents_contract_id.clone(), public_key)
-            .into()
     }
 
     pub fn require_approved_codehash(&self) {

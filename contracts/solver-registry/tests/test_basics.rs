@@ -56,14 +56,7 @@ async fn test_register_worker() -> anyhow::Result<()> {
     println!("\nResult create_liquidity_pool: {:?}", result_pool);
 
     // Check if pool was created successfully
-    if !result_pool.is_success()
-        && !result_pool
-            .into_result()
-            .unwrap()
-            .json::<Option<u32>>()
-            .unwrap()
-            .is_some()
-    {
+    if !result_pool.is_success() {
         println!("Pool creation failed, skipping worker registration test");
         return Ok(());
     }

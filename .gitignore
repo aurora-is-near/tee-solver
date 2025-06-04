@@ -5,3 +5,4 @@
 .cursor 
 .DS_Store
 justfile
+res/
