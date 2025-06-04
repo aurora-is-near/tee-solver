@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "contracts/intents-vault",
     "contracts/solver-registry",
+    "contracts/mock-intents",
 ]
 
 [profile.release]

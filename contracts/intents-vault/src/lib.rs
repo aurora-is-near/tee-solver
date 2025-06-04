@@ -1,4 +1,4 @@
-use near_sdk::{assert_one_yocto, env, ext_contract, near, require, AccountId, Promise, PublicKey};
+use near_sdk::{assert_one_yocto, env, ext_contract, near, require, AccountId, NearToken, Promise, PublicKey};
 
 #[allow(dead_code)]
 #[ext_contract(ext_intents)]
@@ -21,7 +21,9 @@ impl Contract {
         assert_one_yocto();
         self.require_parent_account();
 
-        ext_intents::ext(intents_contract_id).add_public_key(public_key)
+        ext_intents::ext(intents_contract_id)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .add_public_key(public_key)
     }
 }
 

@@ -13,7 +13,6 @@ pub struct Worker {
     codehash: String,
 }
 
-#[ignore = "ignore before fix failure"]
 #[tokio::test]
 async fn test_register_worker() -> anyhow::Result<()> {
     println!("Starting test...");
@@ -32,7 +31,7 @@ async fn test_register_worker() -> anyhow::Result<()> {
         .await?;
     println!("\nResult init: {:?}", result);
 
-    //Call register_worker
+    // Call register_worker
     let collateral = include_str!("samples/quote_collateral.json").to_string();
     let result = contract
         .call("register_worker")

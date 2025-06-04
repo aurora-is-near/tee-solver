@@ -1656,6 +1656,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mock-intents"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "near-gas",
+ "near-sdk",
+ "near-workspaces",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "native-tls"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
