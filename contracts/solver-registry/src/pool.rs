@@ -1,3 +1,4 @@
+use near_sdk::json_types::U128;
 // use near_sdk::json_types::U128;
 use near_sdk::store::LookupMap;
 use near_sdk::{near, require, AccountId, Gas, NearToken, PromiseError, PromiseOrValue};
@@ -21,6 +22,18 @@ pub struct Pool {
     pub shares: LookupMap<AccountId, Balance>,
     /// Total number of shares.
     pub shares_total_supply: Balance,
+}
+
+#[near(serializers = [json])]
+pub struct PoolInfo {
+    /// List of tokens in the pool.
+    pub token_ids: Vec<AccountId>,
+    /// How much NEAR this contract has.
+    pub amounts: Vec<U128>,
+    /// Fee charged for swap in basis points
+    pub fee: u32,
+    /// Total number of shares.
+    pub shares_total_supply: U128,
 }
 
 impl Pool {

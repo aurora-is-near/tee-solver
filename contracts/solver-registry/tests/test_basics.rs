@@ -1,9 +1,11 @@
 use near_gas::NearGas;
-use near_sdk::{near, NearToken};
+use near_sdk::{json_types::U128, near, AccountId, NearToken};
 use serde_json::json;
 
 mod constants;
 use constants::*;
+
+type Balance = u128;
 
 #[near(serializers = [json, borsh])]
 #[derive(Clone)]
@@ -11,6 +13,15 @@ pub struct Worker {
     pool_id: u32,
     checksum: String,
     codehash: String,
+}
+
+#[near(serializers = [json])]
+#[derive(Clone)]
+pub struct PoolInfo {
+    pub token_ids: Vec<AccountId>,
+    pub amounts: Vec<U128>,
+    pub fee: u32,
+    pub shares_total_supply: U128,
 }
 
 #[tokio::test]
@@ -60,6 +71,18 @@ async fn test_register_worker() -> anyhow::Result<()> {
         println!("Pool creation failed, skipping worker registration test");
         return Ok(());
     }
+
+    let result_pool_info = solver_registry_contract
+        .call("get_pool")
+        .args_json(json!({"pool_id" : 0}))
+        .view()
+        .await?;
+
+    let pool: PoolInfo = serde_json::from_slice(&result_pool_info.result).unwrap();
+    println!(
+        "\n [LOG] Pool: {{ token_ids: {:?}, amounts: {:?}, fee: {}, shares_total_supply: {:?} }}",
+        pool.token_ids, pool.amounts, pool.fee, pool.shares_total_supply
+    );
 
     // Approve codehash
     let result_approve_codehash = solver_registry_contract

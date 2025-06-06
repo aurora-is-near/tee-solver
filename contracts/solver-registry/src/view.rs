@@ -11,14 +11,22 @@ impl Contract {
         self.pools.len()
     }
 
+    pub fn get_pool(&self, pool_id: u32) -> Option<PoolInfo> {
+        self.pools.get(pool_id).map(|p| PoolInfo {
+            token_ids: p.token_ids.clone(),
+            amounts: p.amounts.iter().map(|a| (*a).into()).collect(),
+            fee: p.fee,
+            shares_total_supply: p.shares_total_supply.into(),
+        })
+    }
+
     pub fn get_worker_len(&self) -> u32 {
         self.worker_by_account_id.len()
     }
 
-    pub fn get_worker(&self, account_id: AccountId) -> Worker {
+    pub fn get_worker(&self, account_id: AccountId) -> Option<Worker> {
         self.worker_by_account_id
             .get(&account_id)
-            .unwrap()
-            .to_owned()
+            .cloned()
     }
 }
