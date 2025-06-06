@@ -25,8 +25,6 @@ impl Contract {
     }
 
     pub fn get_worker(&self, account_id: AccountId) -> Option<Worker> {
-        self.worker_by_account_id
-            .get(&account_id)
-            .cloned()
+        self.worker_by_account_id.get(&account_id).cloned()
     }
 }
