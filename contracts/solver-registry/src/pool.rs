@@ -1,4 +1,4 @@
-use near_sdk::json_types::U128;
+// use near_sdk::json_types::U128;
 use near_sdk::store::LookupMap;
 use near_sdk::{near, require, AccountId, Gas, NearToken, PromiseError, PromiseOrValue};
 
@@ -96,30 +96,31 @@ impl Contract {
         }
     }
 
-    #[payable]
-    pub fn add_liquidity(
-        &mut self,
-        pool_id: u32,
-        token_ids: Vec<AccountId>,
-        amounts: Vec<Balance>,
-    ) {
-        require!(token_ids.len() == 2, "Must have exactly 2 tokens");
-        require!(amounts.len() == 2, "Must have exactly 2 amounts");
-        require!(amounts[0] > 0, "Amount must be greater than 0");
-        require!(amounts[1] > 0, "Amount must be greater than 0");
+    // `add_liquidity` and `remove_liquidity` are not needed for now
+    // #[payable]
+    // pub fn add_liquidity(
+    //     &mut self,
+    //     pool_id: u32,
+    //     token_ids: Vec<AccountId>,
+    //     amounts: Vec<Balance>,
+    // ) {
+    //     require!(token_ids.len() == 2, "Must have exactly 2 tokens");
+    //     require!(amounts.len() == 2, "Must have exactly 2 amounts");
+    //     require!(amounts[0] > 0, "Amount must be greater than 0");
+    //     require!(amounts[1] > 0, "Amount must be greater than 0");
 
-        let pool = self.pools.get(pool_id).expect("Pool not found");
-        let shares_total_supply = pool.shares_total_supply;
-    }
+    //     let pool = self.pools.get(pool_id).expect("Pool not found");
+    //     let shares_total_supply = pool.shares_total_supply;
+    // }
 
-    #[payable]
-    pub fn remove_liquidity(&mut self, pool_id: u32, shares: U128) {
-        let shares = shares.0;
-        require!(shares > 0, "Shares must be greater than 0");
+    // #[payable]
+    // pub fn remove_liquidity(&mut self, pool_id: u32, shares: U128) {
+    //     let shares = shares.0;
+    //     require!(shares > 0, "Shares must be greater than 0");
 
-        let pool = self.pools.get(pool_id).expect("Pool not found");
-        // pool.shares_total_supply -= shares;
-    }
+    //     let pool = self.pools.get(pool_id).expect("Pool not found");
+    //     // pool.shares_total_supply -= shares;
+    // }
 }
 
 impl Contract {

@@ -7,5 +7,3 @@ pub const QUOTE_HEX : &str = "040002008100000000000000939a7233f79c4ca9940a0db395
 pub const CHECKSUM: &str = "test_checksum";
 pub const TCB_INFO: &str = include_str!("samples/tcb_info.json");
 pub const CODE_HASH: &str = "a27359cd0d747ae62300649e959c02707d70a9fb0900a9771d1f6f9311e89c3f";
-
-pub const QUOTE: &str = r#"{"signer_id": "solvers.near", "nonce": "3awkvkIUsqRsSJhdlNhGzBafs5ITIUZYb1T3AUOB7bA=", "verifying_contract": "intents.near", "deadline": "2025-12-31T11:59:59.000Z", "intents": [{"intent": "token_diff", "diff": {"nep141:wrap.near": "-500000000000000000000000", "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near": "-1277075"}}]}"#;

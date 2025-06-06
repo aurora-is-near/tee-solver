@@ -5,9 +5,10 @@ use near_sdk::{
     env::{self, block_timestamp},
     ext_contract, log, near, require,
     store::{IterableMap, IterableSet, Vector},
-    AccountId, NearToken, PanicOnDefault, Promise, PublicKey,
+    AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseError, PublicKey,
 };
 
+use crate::events::*;
 use crate::pool::*;
 use crate::types::*;
 
@@ -19,6 +20,8 @@ mod token_receiver;
 mod types;
 mod upgrade;
 mod view;
+
+const GAS_REGISTER_WORKER_CALLBACK: Gas = Gas::from_tgas(10);
 
 #[near(serializers = [json, borsh])]
 #[derive(Clone)]
@@ -84,26 +87,48 @@ impl Contract {
 
         // TODO: verify predecessor implicit account is derived from this public key
         let public_key = env::signer_account_pk();
-
-        let predecessor = env::predecessor_account_id();
-        self.worker_by_account_id.insert(
-            predecessor,
-            Worker {
-                pool_id,
-                checksum,
-                codehash,
-            },
-        );
+        let worker_id = env::predecessor_account_id();
 
         // add the public key to the intents vault
         ext_intents_vault::ext(self.get_pool_account_id(pool_id))
             .with_attached_deposit(NearToken::from_yoctonear(1))
-            .add_public_key(self.intents_contract_id.clone(), public_key)
+            .add_public_key(self.intents_contract_id.clone(), public_key.clone())
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(GAS_REGISTER_WORKER_CALLBACK)
+                    .on_worker_key_added(worker_id, pool_id, public_key, codehash, checksum),
+            )
     }
 
-    pub fn require_approved_codehash(&self) {
-        let worker = self.get_worker(env::predecessor_account_id());
-        self.assert_approved_codehash(&worker.codehash);
+    #[private]
+    pub fn on_worker_key_added(
+        &mut self,
+        worker_id: AccountId,
+        pool_id: u32,
+        public_key: PublicKey,
+        codehash: String,
+        checksum: String,
+        #[callback_result] call_result: Result<(), PromiseError>,
+    ) {
+        if call_result.is_ok() {
+            self.worker_by_account_id.insert(
+                worker_id.clone(),
+                Worker {
+                    pool_id,
+                    checksum: checksum.clone(),
+                    codehash: codehash.clone(),
+                },
+            );
+
+            Event::WorkerRegistered {
+                worker_id: &worker_id,
+                pool_id: &pool_id,
+                public_key: &public_key,
+                codehash: &codehash,
+                checksum: &checksum,
+            }
+            .emit();
+        }
     }
 }
 
@@ -114,4 +139,9 @@ impl Contract {
             "Invalid code hash"
         );
     }
+
+    // fn require_approved_codehash(&self) {
+    //     let worker = self.get_worker(env::predecessor_account_id());
+    //     self.assert_approved_codehash(&worker.codehash);
+    // }
 }
