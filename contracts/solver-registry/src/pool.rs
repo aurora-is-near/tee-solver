@@ -4,11 +4,16 @@ use near_sdk::store::LookupMap;
 use near_sdk::{near, require, AccountId, Gas, NearToken, PromiseError, PromiseOrValue};
 
 use crate::events::Event;
+use crate::ext::ext_ft;
 use crate::*;
 
 const CREATE_POOL_STORAGE_DEPOSIT: NearToken =
     NearToken::from_yoctonear(1_500_000_000_000_000_000_000_000); // 1.5 NEAR
 const GAS_CREATE_POOL_CALLBACK: Gas = Gas::from_tgas(10);
+
+const ERR_POOL_NOT_FOUND: &str = "Pool not found";
+const ERR_BAD_TOKEN_ID: &str = "Token doesn't exist in pool";
+const ERR_INVALID_AMOUNT: &str = "Amount must be > 0";
 
 #[near(serializers = [borsh])]
 pub struct Pool {
@@ -145,5 +150,29 @@ impl Contract {
 
     pub(crate) fn has_pool(&self, pool_id: u32) -> bool {
         self.pools.get(pool_id).is_some()
+    }
+
+    pub(crate) fn deposit_into_pool(
+        &self,
+        pool_id: u32,
+        token_id: &AccountId,
+        _sender_id: &AccountId,
+        amount: Balance,
+    ) -> PromiseOrValue<U128> {
+        let pool = self.pools.get(pool_id).expect(ERR_POOL_NOT_FOUND);
+
+        require!(pool.token_ids.contains(token_id), ERR_BAD_TOKEN_ID);
+        require!(amount > 0, ERR_INVALID_AMOUNT);
+
+        // deposit the fund into NEAR Intents
+        ext_ft::ext(token_id.clone())
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .ft_transfer_call(
+                self.intents_contract_id.clone(),
+                U128(amount),
+                Some("deposit into pool".to_string()),
+                self.get_pool_account_id(pool_id).to_string(),
+            )
+            .into()
     }
 }

@@ -15,6 +15,7 @@ use crate::types::*;
 mod admin;
 mod collateral;
 mod events;
+mod ext;
 mod pool;
 mod token_receiver;
 mod types;
@@ -76,7 +77,7 @@ impl Contract {
         let collateral = collateral::get_collateral(collateral);
         let quote = decode(quote_hex).unwrap();
         let now = block_timestamp() / 1000000000;
-        let result = verify::verify(&quote, &collateral, now).expect("report is not verified");
+        let result = verify::verify(&quote, &collateral, now).expect("Report is not verified");
         let rtmr3 = encode(result.report.as_td10().unwrap().rt_mr3);
         let codehash = collateral::verify_codehash(tcb_info, rtmr3);
 

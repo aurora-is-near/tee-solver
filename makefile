@@ -21,8 +21,13 @@ mock-intents:
 	@mkdir -p contracts/mock-intents/res
 	@cp target/near/mock_intents/mock_intents.wasm ./contracts/mock-intents/res/mock_intents.wasm
 
-test: solver-registry intents-vault mock-intents
-	@cargo test -- --nocapture
+mock-ft:
+	$(call compile-release,mock-ft)
+	@mkdir -p contracts/mock-ft/res
+	@cp target/near/mock_ft/mock_ft.wasm ./contracts/mock-ft/res/mock_ft.wasm
+
+test: solver-registry intents-vault mock-intents mock-ft
+	cargo test -- --nocapture
 
 define compile-release
 	@rustup target add wasm32-unknown-unknown

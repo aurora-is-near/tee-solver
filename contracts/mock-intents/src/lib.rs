@@ -4,6 +4,8 @@ use near_sdk::{
 };
 use std::collections::HashSet;
 
+mod token_receiver;
+
 #[derive(PanicOnDefault)]
 #[near(contract_state)]
 pub struct Contract {
@@ -39,7 +41,9 @@ impl Contract {
     pub fn public_keys_of(&self, account_id: AccountId) -> HashSet<PublicKey> {
         self.internal_get_account(&account_id)
     }
+}
 
+impl Contract {
     fn internal_get_account(&self, account_id: &AccountId) -> HashSet<PublicKey> {
         self.public_keys
             .get(account_id)

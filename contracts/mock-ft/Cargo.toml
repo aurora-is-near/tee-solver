@@ -1,11 +1,11 @@
 [package]
-name = "intents-vault"
-description = "NEAR Intents Vault"
+name = "mock-ft"
+description = "Mocked Fungible Token Contract for Testing"
 version = "0.1.0"
 edition = "2021"
 # NEP-0330 is automatically implemented for all contracts built with https://github.com/near/cargo-near.
 # Link to the repository will be available via `contract_source_metadata` view-function.
-repository = "https://github.com/near-intents/tee-solver/tree/main/contracts/intents-vault"
+repository = "https://github.com/near-intents/tee-solver/tree/main/contracts/mock-ft"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -36,6 +36,7 @@ container_build_command = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 near-sdk = "5.14.0"
+near-contract-standards = "5.14.0"
 serde_json = "1.0.140"
 
 [dev-dependencies]

@@ -4,6 +4,7 @@ members = [
     "contracts/intents-vault",
     "contracts/solver-registry",
     "contracts/mock-intents",
+    "contracts/mock-ft",
 ]
 
 [profile.release]

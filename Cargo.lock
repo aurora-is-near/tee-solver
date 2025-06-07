@@ -1656,6 +1656,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "mock-ft"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "near-contract-standards",
+ "near-gas",
+ "near-sdk",
+ "near-workspaces",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "mock-intents"
 version = "0.1.0"
 dependencies = [
@@ -1780,6 +1793,15 @@ dependencies = [
  "json_comments",
  "thiserror 2.0.12",
  "tracing",
+]
+
+[[package]]
+name = "near-contract-standards"
+version = "5.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef23d0204b2c12ff54bb04c6cb83fadf8d74ea77acde09263f279b3b9c97a684"
+dependencies = [
+ "near-sdk",
 ]
 
 [[package]]
@@ -3124,6 +3146,7 @@ dependencies = [
  "anyhow",
  "dcap-qvl",
  "hex",
+ "near-contract-standards",
  "near-gas",
  "near-sdk",
  "near-workspaces",

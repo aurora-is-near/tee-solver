@@ -1,103 +1,103 @@
 use near_gas::NearGas;
-use near_sdk::{json_types::U128, near, AccountId, NearToken};
+use near_sdk::NearToken;
 use serde_json::json;
 
 mod constants;
+mod utils;
+
 use constants::*;
-
-type Balance = u128;
-
-#[near(serializers = [json, borsh])]
-#[derive(Clone)]
-pub struct Worker {
-    pool_id: u32,
-    checksum: String,
-    codehash: String,
-}
-
-#[near(serializers = [json])]
-#[derive(Clone)]
-pub struct PoolInfo {
-    pub token_ids: Vec<AccountId>,
-    pub amounts: Vec<U128>,
-    pub fee: u32,
-    pub shares_total_supply: U128,
-}
+use utils::*;
 
 #[tokio::test]
-async fn test_register_worker() -> anyhow::Result<()> {
+async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test...");
     let sandbox = near_workspaces::sandbox().await?;
 
-    let mock_intents_contract_wasm =
-        std::fs::read(MOCK_INTENTS_CONTRACT_WASM).expect("Contract wasm not found");
-    let mock_intents_contract = sandbox.dev_deploy(&mock_intents_contract_wasm).await?;
+    println!("Deploying wNEAR contract...");
+    let wnear = create_ft(
+        &sandbox,
+        "Wrapped NEAR",
+        "wNEAR",
+        24,
+        NearToken::from_near(1_000_000_000).as_yoctonear(), // 1B
+    )
+    .await?;
 
-    println!("Initializing solver mock intents contract...");
-    let result = mock_intents_contract.call("new").transact().await?;
-    println!("\nResult init: {:?}", result);
+    println!("Deploying USDC contract...");
+    let usdc = create_ft(
+        &sandbox,
+        "USD Coin",
+        "USDC",
+        6,
+        10_000_000_000_000_000, // 10B
+    )
+    .await?;
 
-    let solver_registry_contract_wasm =
-        std::fs::read(SOLVER_REGISTRY_CONTRACT_WASM).expect("Contract wasm not found");
-    let solver_registry_contract = sandbox.dev_deploy(&solver_registry_contract_wasm).await?;
+    let owner = create_account(&sandbox, "owner", 10).await?;
+    let alice = create_account(&sandbox, "alice", 10).await?;
 
-    println!("Initializing solver registry contract...");
-    let result = solver_registry_contract
-        .call("new")
-        .args_json(json!({
-            "owner_id": solver_registry_contract.id(),
-            "intents_contract_id": mock_intents_contract.id(),
-        }))
-        .transact()
-        .await?;
-    println!("\nResult init: {:?}", result);
+    // Reigster accounts for NEP-141 tokens
+    let _ = storage_deposit(&wnear, &alice).await?;
+    let _ = storage_deposit(&usdc, &alice).await?;
+
+    println!("Deploying mockd intents contract...");
+    let mock_intents = deploy_mock_intents(&sandbox).await?;
+
+    println!("Deploying Solver Registry contract...");
+    let solver_registry = deploy_solver_registry(&sandbox, &mock_intents, &owner).await?;
+
+    // Reigster contracts for NEP-141 tokens
+    let _ = storage_deposit(&wnear, mock_intents.as_account()).await?;
+    let _ = storage_deposit(&usdc, mock_intents.as_account()).await?;
+
+    let _ = storage_deposit(&wnear, solver_registry.as_account()).await?;
+    let _ = storage_deposit(&usdc, solver_registry.as_account()).await?;
 
     // Create a liquidity pool first
-    println!("creating liquidity pool...");
-    let result_pool = solver_registry_contract
+    println!("Creating liquidity pool...");
+    let result = solver_registry
         .call("create_liquidity_pool")
         .args_json(json!({
-            "token_ids": ["token1.near", "token2.near"],
+            "token_ids": [wnear.id(), usdc.id()],
             "fee": 300
         }))
         .deposit(NearToken::from_yoctonear(1_500_000_000_000_000_000_000_000)) // 1.5 NEAR
         .gas(NearGas::from_tgas(300))
         .transact()
         .await?;
-    println!("\nResult create_liquidity_pool: {:?}", result_pool);
+    assert!(
+        result.is_success(),
+        "{:#?}",
+        result.into_result().unwrap_err()
+    );
 
-    // Check if pool was created successfully
-    if !result_pool.is_success() {
-        println!("Pool creation failed, skipping worker registration test");
-        return Ok(());
-    }
-
-    let result_pool_info = solver_registry_contract
-        .call("get_pool")
+    let result = solver_registry
+        .view("get_pool")
         .args_json(json!({"pool_id" : 0}))
-        .view()
         .await?;
-
-    let pool: PoolInfo = serde_json::from_slice(&result_pool_info.result).unwrap();
+    let pool: PoolInfo = serde_json::from_slice(&result.result).unwrap();
     println!(
         "\n [LOG] Pool: {{ token_ids: {:?}, amounts: {:?}, fee: {}, shares_total_supply: {:?} }}",
         pool.token_ids, pool.amounts, pool.fee, pool.shares_total_supply
     );
 
-    // Approve codehash
-    let result_approve_codehash = solver_registry_contract
-        .call("approve_codehash")
+    // Approve codehash by owner
+    let result = owner
+        .call(solver_registry.id(), "approve_codehash")
         .args_json(json!({
             "codehash": CODE_HASH
         }))
         .transact()
         .await?;
+    assert!(
+        result.is_success(),
+        "{:#?}",
+        result.into_result().unwrap_err()
+    );
 
-    println!("\n[LOG] Approve codehash: {:?}", result_approve_codehash);
-
-    // Call register_worker
+    // Register worker (TODO: verify public key)
     let collateral = include_str!("samples/quote_collateral.json").to_string();
-    let result = solver_registry_contract
+    let result = solver_registry
         .call("register_worker")
         .args_json(json!({
             "pool_id": 0,
@@ -110,33 +110,43 @@ async fn test_register_worker() -> anyhow::Result<()> {
         .gas(NearGas::from_tgas(300))
         .transact()
         .await?;
+    assert!(
+        result.is_success(),
+        "{:#?}",
+        result.into_result().unwrap_err()
+    );
 
-    println!("\nResult register_worker: {:?}", result);
-    assert!(result.is_success());
-
-    let result_get_worker = solver_registry_contract
-        .call("get_worker")
-        .args_json(json!({"account_id" : solver_registry_contract.id()}))
-        .view()
+    let result_get_worker = solver_registry
+        .view("get_worker")
+        .args_json(json!({"account_id" : solver_registry.id()}))
         .await?;
 
-    let worker: Worker = serde_json::from_slice(&result_get_worker.result).unwrap();
+    let worker: WorkerInfo = serde_json::from_slice(&result_get_worker.result).unwrap();
     println!(
         "\n [LOG] Worker: {{ checksum: {}, codehash: {}, poolId: {} }}",
         worker.checksum, worker.codehash, worker.pool_id
     );
 
-    // Expect success value because we registered the codehash
-    let result_get_codehash = solver_registry_contract
-        .call("require_approved_codehash")
-        .args_json(json!({}))
-        .transact()
-        .await?;
+    // Transfer some wNEAR and USDC to Alice
+    let _ = ft_transfer(
+        &wnear,
+        wnear.as_account(),
+        &alice,
+        NearToken::from_near(100).as_yoctonear(),
+    )
+    .await?;
+    let _ = ft_transfer(&usdc, usdc.as_account(), &alice, 500_000_000).await?;
 
-    println!(
-        "\n[LOG] Require approved codehash AFTER approve: {:?}",
-        result_get_codehash
-    );
+    // Deposint some 10 NEAR and 50 USDC into liquidity pool
+    let _ = deposit_into_pool(
+        &solver_registry,
+        &alice,
+        0,
+        &wnear,
+        NearToken::from_near(10).as_yoctonear(),
+    )
+    .await?;
+    let _ = deposit_into_pool(&solver_registry, &alice, 0, &usdc, 50_000_000).await?;
 
     Ok(())
 }
