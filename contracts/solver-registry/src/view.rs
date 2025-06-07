@@ -27,4 +27,12 @@ impl Contract {
     pub fn get_worker(&self, account_id: AccountId) -> Option<Worker> {
         self.worker_by_account_id.get(&account_id).cloned()
     }
+
+    pub fn get_workers(&self, offset: u32, limit: u32) -> Vec<&Worker> {
+        self.worker_by_account_id
+            .values()
+            .skip(offset as usize)
+            .take(limit as usize)
+            .collect()
+    }
 }

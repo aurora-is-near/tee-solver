@@ -114,6 +114,21 @@ impl Contract {
         }
     }
 
+    #[private]
+    pub fn on_deposit_into_pool(
+        &mut self,
+        amount: U128,
+        #[callback_result] used_fund: Result<U128, PromiseError>,
+    ) -> U128 {
+        if let Ok(used_fund) = used_fund {
+            // Refund the unused amount.
+            // ft_transfser_call() returns the used fund
+            U128(amount.0.saturating_sub(used_fund.0))
+        } else {
+            amount
+        }
+    }
+
     // `add_liquidity` and `remove_liquidity` are not needed for now
     // #[payable]
     // pub fn add_liquidity(
@@ -174,6 +189,7 @@ impl Contract {
                 Some("deposit into pool".to_string()),
                 self.get_pool_account_id(pool_id).to_string(),
             )
+            .then(Self::ext(env::current_account_id()).on_deposit_into_pool(U128(amount)))
             .into()
     }
 }
