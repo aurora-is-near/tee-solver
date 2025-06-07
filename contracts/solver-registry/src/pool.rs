@@ -165,6 +165,7 @@ impl Contract {
         require!(amount > 0, ERR_INVALID_AMOUNT);
 
         // deposit the fund into NEAR Intents
+        // NEAR Intents docs: https://docs.near-intents.org/near-intents/market-makers/verifier/deposits-and-withdrawals/deposits
         ext_ft::ext(token_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .ft_transfer_call(
