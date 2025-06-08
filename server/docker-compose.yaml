@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  cvm_runner:
+    image: robortyan/intents-tee-amm-solver:latest@sha256:074e718d585f2f0a81efddf7a0fa82a674450474a6a2392706e839ba3c2fa4e2
+    platform: linux/amd64
+    ports:
+      - "3000:3000"
+    environment:
+      NEAR_NETWORK_ID: ${NEAR_NETWORK_ID}
+      NEAR_NODE_URL: ${NEAR_NODE_URL}
+      INTENTS_CONTRACT: ${INTENTS_CONTRACT}
+      SOLVER_REGISTRY_CONTRACT: ${SOLVER_REGISTRY_CONTRACT}
+      SOLVER_POOL_ID: ${SOLVER_POOL_ID}
+      AMM_TOKEN1_ID: ${AMM_TOKEN1_ID}
+      AMM_TOKEN2_ID: ${AMM_TOKEN2_ID}
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock
