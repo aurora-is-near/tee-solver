@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      axios:
+        specifier: ^1.9.0
+        version: 1.9.0
       near-api-js:
         specifier: ^5.1.0
         version: 5.1.1
@@ -17,6 +20,9 @@ importers:
       winston:
         specifier: ^3.17.0
         version: 3.17.0
+      zod:
+        specifier: ^3.25.56
+        version: 3.25.56
     devDependencies:
       '@types/jest':
         specifier: ^29.5.0

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { logger } from '../utils/logger';
+import { logger } from '../../utils/logger';
 
 // Define the directory and file for storing credentials
 const PHALA_CLOUD_DIR = path.join(os.homedir(), '.phala-cloud');

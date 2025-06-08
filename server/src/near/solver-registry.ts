@@ -1,7 +1,24 @@
 import { getConfig } from "../config";
-import { PoolInfo, WorkerInfo } from "../types/solver-registry";
 import { range } from "../utils/array";
 import { viewFunction } from "./utils";
+
+export interface WorkerInfo {
+  account_id: string;
+  pool_id: number;
+  checksum: string;
+  codehash: string;
+}
+
+export interface PoolInfo {
+  /// List of tokens in the pool.
+  token_ids: string[],
+  /// How much NEAR this contract has.
+  amounts: string[],
+  /// Fee charged for swap in basis points
+  fee: number,
+  /// Total number of shares.
+  shares_total_supply: string,
+}
 
 export class SolverRegistry {
   private solverRegistryContract: string | null = null;
@@ -38,6 +55,17 @@ export class SolverRegistry {
       contractId: this.solverRegistryContract!,
       methodName: 'get_worker_len',
       args: {},
+    });
+  }
+
+  public async getWorker(accountId: string): Promise<WorkerInfo> {
+    await this.init();
+    return await viewFunction({
+      contractId: this.solverRegistryContract!,
+      methodName: 'get_worker',
+      args: {
+        account_id: accountId
+      },
     });
   }
 

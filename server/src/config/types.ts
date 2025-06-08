@@ -7,7 +7,8 @@ export type Config = {
       solverRegistry: string;
     };
     account: {
-      operator: string;
+      operatorAddress: string;
+      operatorPrivateKey: `ed25519:${string}`;
     };
   };
   phala: {

@@ -1,5 +1,5 @@
 import { optionalEnv, requiredEnv } from "./env";
-import { Config } from '../types/config';
+import { Config } from './types';
 
 const config: Config = {
   near: {
@@ -10,14 +10,15 @@ const config: Config = {
       solverRegistry: 'solver-registry-dev.testnet',
     },
     account: {
-      operator: optionalEnv('OPERATOR_ACCOUNT_ID') || 'solver-master.testnet',
+      operatorAddress: optionalEnv('OPERATOR_ACCOUNT_ID') || 'solver-master.testnet',
+      operatorPrivateKey: requiredEnv('OPERATOR_PRIVATE_KEY') as `ed25519:${string}`,
     },
   },
   phala: {
     apiKey: optionalEnv('PHALA_API_KEY') || '',
   },
   worker: {
-    minimumBalance: 0.05,
+    minimumBalance: 0.1, // NEAR
   }
 };
 

@@ -2,8 +2,13 @@ import { execSync } from 'child_process';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { getConfig } from '../config';
-import { getApiKey, saveApiKey } from './credentials';
+import { getApiKey, saveApiKey } from './utils/credentials';
 import { logger } from '../utils/logger';
+import { CvmInstance } from './api/types';
+import { getCvms } from './api/cvms';
+
+const SOLVER_POOL_PREFIX = 'solver-pool-';
+const SOLVER_PORT = 3000;
 
 export class PhalaCloudService {
   async setupPhalaAuth(): Promise<void> {
@@ -21,7 +26,7 @@ export class PhalaCloudService {
     logger.info('Phala auth configured successfully');
   }
 
-  async createCVM(poolId: number, tokenIds: string[]): Promise<void> {
+  async createSolverCvm(poolId: number, tokenIds: string[]): Promise<void> {
     const config = await getConfig();
 
     // const composePath = join(process.cwd(), `docker-compose.yaml`);
@@ -37,7 +42,8 @@ AMM_TOKEN2_ID=${tokenIds[1]}
     writeFileSync(envPath, envContent);
 
     // const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const output = execSync(`npx phala cvms create -n solver-pool-${poolId} -c docker-compose.yaml -e .env.phala`, { encoding: 'utf-8' });
+    const cvmName = this.getSolverCvmName(poolId);
+    const output = execSync(`npx phala cvms create -n ${cvmName} -c docker-compose.yaml -e .env.phala`, { encoding: 'utf-8' });
 
     logger.info(output);
 
@@ -49,13 +55,27 @@ AMM_TOKEN2_ID=${tokenIds[1]}
     // return match[1];
   }
 
-  async getCVMAddress(cvmHostUrl: string): Promise<string> {
+  getSolverCvmName(poolId: number): string {
+    return `${SOLVER_POOL_PREFIX}${poolId}`;
+  }
+
+  async getSolverCvms(): Promise<CvmInstance[]> {
+    const cvms = await getCvms();
+    const solverCvms = cvms.filter(cvm => cvm.name && cvm.name.startsWith(SOLVER_POOL_PREFIX));
+    return solverCvms;
+  }
+
+  async getSolverUrl(cvm: CvmInstance): Promise<string> {
+    return `https://${cvm.hosted?.app_id}-${SOLVER_PORT}.dstack-${cvm.node.name}.phala.network`;
+  }
+
+  async getSolverAddress(solverUrl: string): Promise<string> {
     try {
-      const response = await fetch(`${cvmHostUrl}/address`);
+      const response = await fetch(`${solverUrl}/address`);
       const data = await response.json() as { address: string };
       return data.address;
     } catch (error) {
-      console.error('Failed to get CVM address:', error);
+      logger.error('Failed to get solver address:', error);
       throw error;
     }
   }
