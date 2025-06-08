@@ -44,7 +44,10 @@ pub struct PoolInfo {
 impl Pool {
     pub fn new(token_ids: Vec<AccountId>, fee: u32) -> Self {
         require!(token_ids.len() == 2, "Must have exactly 2 tokens");
-        require!(token_ids[0] != token_ids[1], "The two tokens cannot be identical");
+        require!(
+            token_ids[0] != token_ids[1],
+            "The two tokens cannot be identical"
+        );
         require!(fee < 10_000, "Fee must be less than 100%");
 
         Self {
