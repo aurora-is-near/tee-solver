@@ -7,7 +7,7 @@ const config: Config = {
     rpcUrl: optionalEnv('NEAR_RPC_URL') || 'https://near.lava.build',
     contract: {
       intents: 'intents.near',
-      solverRegistry: 'solver-registry.near',
+      solverRegistry: 'solver-registry-dev.near',
     },
     account: {
       operatorAddress: requiredEnv('OPERATOR_ACCOUNT_ID'),
@@ -15,7 +15,7 @@ const config: Config = {
     },
   },
   phala: {
-    apiKey: optionalEnv('PHALA_API_KEY') || 'phala-api-key.txt',
+    apiKey: optionalEnv('PHALA_API_KEY') || '',
   },
   worker: {
     minimumBalance: 0.1, // NEAR
