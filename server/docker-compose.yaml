@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   cvm_runner:
-    image: robortyan/intents-tee-amm-solver:latest@sha256:b08c929607a344db24191b59c388abdca2bc9721d8eab7fb740b19de03a7d690
+    image: robortyan/intents-tee-amm-solver:latest@sha256:73056c3446210e747b2ed3d5dfad5f842b31e4a9155c0feaeeb45a3f515816fc
     platform: linux/amd64
     ports:
       - "3000:3000"
