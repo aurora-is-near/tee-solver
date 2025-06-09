@@ -6,6 +6,7 @@ export SOLVER_TESTER_ACCOUNT=solver-alpha.near
 export WNEAR_TOKEN=wrap.near
 export USDC_TOKEN=17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1
 export POOL_ID=0
+export POOL_CONTRACT='pool-'$POOL_ID'.'$SOLVER_REGISTRY_CONTRACT
 
 # --- prepare funds ---
 
@@ -44,5 +45,5 @@ near view $WNEAR_TOKEN ft_balance_of '{"account_id":"'$SOLVER_REGISTRY_CONTRACT'
 near view $WNEAR_TOKEN ft_balance_of '{"account_id":"'$SOLVER_TESTER_ACCOUNT'"}'
 
 # check mt balance
-near view $INTENTS_CONTRACT mt_balance_of '{"account_id":"pool-'$POOL_ID'.'$SOLVER_REGISTRY_CONTRACT'","token_id":"nep141:'$WNEAR_TOKEN'"}'
-near view $INTENTS_CONTRACT mt_balance_of '{"account_id":"pool-'$POOL_ID'.'$SOLVER_REGISTRY_CONTRACT'","token_id":"nep141:'$USDC_TOKEN'"}'
+near view $INTENTS_CONTRACT mt_balance_of '{"account_id":"'$POOL_CONTRACT'","token_id":"nep141:'$WNEAR_TOKEN'"}'
+near view $INTENTS_CONTRACT mt_balance_of '{"account_id":"'$POOL_CONTRACT'","token_id":"nep141:'$USDC_TOKEN'"}'

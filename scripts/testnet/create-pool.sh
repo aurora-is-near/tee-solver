@@ -6,7 +6,7 @@ export SOLVER_TESTER_ACCOUNT=solver-alpha.testnet
 export WNEAR_TOKEN=wrap.testnet
 export USDC_TOKEN=usdc.fakes.testnet
 export POOL_ID=0
-
+export POOL_CONTRACT='pool-'$POOL_ID'.'$SOLVER_REGISTRY_CONTRACT
 
 # create liquidity pool
 near call $SOLVER_REGISTRY_CONTRACT create_liquidity_pool '{"token_ids":["'$WNEAR_TOKEN'","'$USDC_TOKEN'"],"fee":100}' --accountId $SOLVER_TESTER_ACCOUNT --deposit 1.5 --gas 300000000000000
