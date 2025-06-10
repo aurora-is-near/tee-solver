@@ -10,12 +10,12 @@ const config: Config = {
       solverRegistry: 'solver-registry-dev.near',
     },
     account: {
-      operatorAddress: requiredEnv('OPERATOR_ACCOUNT_ID'),
-      operatorPrivateKey: requiredEnv('OPERATOR_PRIVATE_KEY') as `ed25519:${string}`,
+      operatorAddress: requiredEnv('FUNDING_ACCOUNT_ID'),
+      operatorPrivateKey: requiredEnv('FUNDING_ACCOUNT_PRIVATE_KEY') as `ed25519:${string}`,
     },
   },
   phala: {
-    apiKey: optionalEnv('PHALA_API_KEY') || '',
+    apiKey: optionalEnv('PHALA_CLOUD_API_KEY') || '',
   },
   worker: {
     minimumBalance: 0.1, // NEAR

@@ -5,13 +5,14 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
+    "start": "node -r dotenv/config dist/index.js",
+    "dev": "ts-node -r dotenv/config src/index.ts",
     "test": "jest",
     "lint": "eslint . --ext .ts"
   },
   "dependencies": {
     "axios": "^1.9.0",
+    "dotenv": "^16.5.0",
     "near-api-js": "^5.1.0",
     "phala": "^1.0.15",
     "winston": "^3.17.0",

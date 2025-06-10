@@ -1,5 +1,8 @@
+import * as dotenv from "dotenv";
 import { deploySolvers } from "./tasks/deploy-solvers";
 import { setupAuth } from "./tasks/setup-auth";
+
+dotenv.config();
 
 async function main() {
   // configure auths (e.g. Phala Cloud)

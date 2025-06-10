@@ -1,1 +1,108 @@
-# NEAR Intents TEE Solver
+# NEAR Intents TEE Solver Registry
+
+The NEAR Intents TEE Solver Registry is a system that enables secure and private execution of NEAR Intents solvers (user intentions) using Trusted Execution Environment (TEE) technology. This project consists of smart contracts for managing solver registration and a server component for launching and managing TEE solvers.
+
+The system also allow creating of liquidity pool for NEAR Intents, which will be extended to support adding and removing liquidities of in next iteration.
+
+## Overview
+
+The system consists of two main components:
+
+1. **Smart Contracts**
+   - `solver-registry`: Support liquidity pools creation. Manage registration and verification of TEE solvers for each liquidity pool.
+   - `intents-vault`: The vault contract that manage the pool's asset within NEAR Intents.
+
+2. **Solver Management Server**
+   - A TypeScript-based server that manages the lifecycle of TEE solvers
+   - Handles solver deployment and monitoring for each liquidity pool
+
+## Prerequisites
+
+- Rust and Cargo (latest stable version)
+- Node.js (v20 or later)
+- pnpm package manager
+- Docker and Docker Compose
+- NEAR CLI
+- A NEAR account with sufficient NEAR tokens for funding the ephemeral accounts in each TEE solver
+
+## Project Structure
+
+```
+tee-solver/
+├── contracts/           # Smart contracts
+│   ├── solver-registry/ # Solver registry contract
+│   ├── intents-vault/   # NEAR Intents vault contract for testing
+│   ├── mock-intents/    # Mock NEAR Intents contract for testing
+│   └── mock-ft/         # Mock fungible token
+├── server/             # Solver management server
+│   ├── src/            # Server source code
+└── scripts/            # Deployment and utility scripts
+```
+
+## Setup and Deployment
+
+### 1. Smart Contracts
+
+1. Build the contracts:
+
+Install [`cargo-near`](https://github.com/near/cargo-near) and run:
+
+```bash
+make all
+```
+
+2. Test the contracts
+
+```bash
+make test
+```
+
+3. Deploy the contracts:
+```bash
+cd contracts/solver-registry
+cargo near deploy build-reproducible-wasm <account-id>
+```
+
+#### Tools
+
+- [cargo-near](https://github.com/near/cargo-near) - NEAR smart contract development toolkit for Rust
+- [near CLI](https://near.cli.rs) - Interact with NEAR blockchain from command line
+- [NEAR Rust SDK Documentation](https://docs.near.org/sdk/rust/introduction)
+
+
+### 2. Solver Launcher Server
+
+1. Navigate to the server directory:
+```bash
+cd server
+```
+
+2. Install dependencies:
+```bash
+pnpm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+4. Start the server:
+```bash
+# Development mode
+pnpm dev
+
+# Production mode
+pnpm build
+pnpm start
+```
+
+## Security
+
+This project uses TEE (Trusted Execution Environment) to ensure secure and private execution of NEAR Intents solvers. 
+
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

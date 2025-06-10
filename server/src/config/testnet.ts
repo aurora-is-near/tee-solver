@@ -10,12 +10,12 @@ const config: Config = {
       solverRegistry: 'solver-registry-dev.testnet',
     },
     account: {
-      operatorAddress: optionalEnv('OPERATOR_ACCOUNT_ID') || 'solver-master.testnet',
-      operatorPrivateKey: requiredEnv('OPERATOR_PRIVATE_KEY') as `ed25519:${string}`,
+      operatorAddress: optionalEnv('FUNDING_ACCOUNT_ID') || 'solver-master.testnet',
+      operatorPrivateKey: requiredEnv('FUNDING_ACCOUNT_PRIVATE_KEY') as `ed25519:${string}`,
     },
   },
   phala: {
-    apiKey: optionalEnv('PHALA_API_KEY') || '',
+    apiKey: optionalEnv('PHALA_CLOUD_API_KEY') || '',
   },
   worker: {
     minimumBalance: 0.1, // NEAR

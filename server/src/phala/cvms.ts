@@ -19,7 +19,7 @@ export class PhalaCloudService {
         if (config.phala.apiKey) {
             await saveApiKey(config.phala.apiKey);
         } else {
-            throw new Error('PHALA_API_KEY is not set');
+            throw new Error('PHALA_CLOUD_API_KEY is not set');
         }
     }
 
