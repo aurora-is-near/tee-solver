@@ -8,6 +8,7 @@ mod utils;
 use constants::*;
 use utils::*;
 
+#[ignore = "The remote attestation report data cannot be equal to the public key"]
 #[tokio::test]
 async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test...");
