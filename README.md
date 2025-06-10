@@ -31,11 +31,10 @@ The system consists of two main components:
 tee-solver/
 ├── contracts/           # Smart contracts
 │   ├── solver-registry/ # Solver registry contract
-│   ├── intents-vault/   # NEAR Intents vault contract for testing
+│   ├── intents-vault/   # NEAR Intents vault contract
 │   ├── mock-intents/    # Mock NEAR Intents contract for testing
-│   └── mock-ft/         # Mock fungible token
-├── server/             # Solver management server
-│   ├── src/            # Server source code
+│   └── mock-ft/         # Mock fungible token for testing
+├── server/             # TEE Solver management server
 └── scripts/            # Deployment and utility scripts
 ```
 
