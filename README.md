@@ -1,8 +1,8 @@
 # NEAR Intents TEE Solver Registry
 
-The NEAR Intents TEE Solver Registry is a system that enables secure and private execution of NEAR Intents solvers (user intentions) using Trusted Execution Environment (TEE) technology. This project consists of smart contracts for managing solver registration and a server component for launching and managing TEE solvers.
+The NEAR Intents TEE Solver Registry is a protocol that enables secure and private execution of NEAR Intents solvers (user intentions) using Trusted Execution Environment (TEE) technology. This project consists of smart contracts for managing solver registration and a server for launching and managing TEE solvers.
 
-The system also allow creating of liquidity pool for NEAR Intents, which will be extended to support adding and removing liquidities of in next iteration.
+This protocol allows liquidity pools creation for NEAR Intents, which will be extended to support adding and removing liquidity in next iteration.
 
 ## Overview
 
@@ -60,7 +60,7 @@ make test
 3. Deploy the contracts:
 ```bash
 cd contracts/solver-registry
-cargo near deploy build-reproducible-wasm <account-id>
+cargo near deploy build-reproducible-wasm <contract-id>
 ```
 
 #### Tools
@@ -71,6 +71,10 @@ cargo near deploy build-reproducible-wasm <account-id>
 
 
 ### 2. Solver Launcher Server
+
+Every time a new liquidity pool is created in the Solver Registry contract, the server will find the pools that needs to create a solver. 
+
+We'll use the [TEE-powered AMM solver](https://github.com/think-in-universe/near-intents-tee-amm-solver/tree/feat/tee-solver) as the default solver to launch once a new liquidity pool is created in the solver registry contract.
 
 1. Navigate to the server directory:
 ```bash
@@ -102,6 +106,9 @@ pnpm start
 
 This project uses TEE (Trusted Execution Environment) to ensure secure and private execution of NEAR Intents solvers. 
 
+## Acknowledgement
+
+The project is inspired by the incredible design of [Shade Agent](https://github.com/NearDeFi/shade-agent-template).
 
 ## License
 
