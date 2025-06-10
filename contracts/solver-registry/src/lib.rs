@@ -85,7 +85,8 @@ impl Contract {
 
         // verify the signer public key is the same the one included in the report data
         let public_key = env::signer_account_pk();
-        let public_key_hex = encode(public_key.as_bytes());
+        let public_key_str: String = (&public_key).into();
+        let public_key_hex = encode(public_key_str);
         require!(
             public_key_hex == report_data,
             format!(
