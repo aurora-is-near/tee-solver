@@ -7,4 +7,4 @@ export SOLVER_GOV_ACCOUNT=solver-gov.testnet
 near deploy $INTENTS_CONTRACT ../../contracts/mock-intents/res/mock_intents.wasm --initFunction new --initArgs '{}'
 
 # deploy solver registry contract
-near deploy $SOLVER_REGISTRY_CONTRACT ../../contracts/solver_registry/res/solver_registry.wasm --initFunction new --initArgs '{"owner_id":"'$SOLVER_GOV_ACCOUNT'","intents_contract_id":"'$INTENTS_CONTRACT'"}'
+near deploy $SOLVER_REGISTRY_CONTRACT ../../contracts/solver-registry/res/solver_registry.wasm --initFunction new --initArgs '{"owner_id":"'$SOLVER_GOV_ACCOUNT'","intents_contract_id":"'$INTENTS_CONTRACT'"}'
