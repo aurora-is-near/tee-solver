@@ -80,10 +80,9 @@ impl Contract {
         let result = verify::verify(&quote, &collateral, now).expect("Report is not verified");
         let report = result.report.as_td10().unwrap();
         let rtmr3 = encode(report.rt_mr3);
-        let report_data = encode(report.report_data);
-        let codehash = collateral::verify_codehash(tcb_info, rtmr3);
 
         // verify the signer public key is the same the one included in the report data
+        let report_data = encode(report.report_data);
         let public_key = env::signer_account_pk();
         let public_key_str: String = (&public_key).into();
         // pad the public key hex with 0 to 128 characters
@@ -97,6 +96,7 @@ impl Contract {
         );
 
         // only allow workers with approved code hashes to register
+        let codehash = collateral::verify_codehash(tcb_info, rtmr3);
         self.assert_approved_codehash(&codehash);
 
         log!("verify result: {:?}", result);
