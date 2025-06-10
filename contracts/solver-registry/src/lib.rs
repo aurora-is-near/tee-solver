@@ -78,8 +78,21 @@ impl Contract {
         let quote = decode(quote_hex).unwrap();
         let now = block_timestamp() / 1000000000;
         let result = verify::verify(&quote, &collateral, now).expect("Report is not verified");
-        let rtmr3 = encode(result.report.as_td10().unwrap().rt_mr3);
+        let report = result.report.as_td10().unwrap();
+        let rtmr3 = encode(report.rt_mr3);
+        let report_data = encode(report.report_data);
         let codehash = collateral::verify_codehash(tcb_info, rtmr3);
+
+        // verify the signer public key is the same the one included in the report data
+        let public_key = env::signer_account_pk();
+        let public_key_hex = encode(public_key.as_bytes());
+        require!(
+            public_key_hex == report_data,
+            format!(
+                "Invalid public key: {} v.s. {}",
+                public_key_hex, report_data
+            )
+        );
 
         // only allow workers with approved code hashes to register
         self.assert_approved_codehash(&codehash);
@@ -87,7 +100,7 @@ impl Contract {
         log!("verify result: {:?}", result);
 
         // TODO: verify predecessor implicit account is derived from this public key
-        let public_key = env::signer_account_pk();
+
         let worker_id = env::predecessor_account_id();
 
         // add the public key to the intents vault
