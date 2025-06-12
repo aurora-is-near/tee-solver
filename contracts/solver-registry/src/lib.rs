@@ -81,7 +81,7 @@ impl Contract {
         let report = result.report.as_td10().unwrap();
         let rtmr3 = encode(report.rt_mr3);
 
-        // verify the signer public key is the same the one included in the report data
+        // verify the signer public key is the same as the one included in the report data
         let report_data = encode(report.report_data);
         let public_key = env::signer_account_pk();
         let public_key_str: String = (&public_key).into();
