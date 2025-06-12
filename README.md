@@ -1,8 +1,8 @@
 # NEAR Intents TEE Solver Registry
 
-The NEAR Intents TEE Solver Registry is a protocol that enables secure and private execution of NEAR Intents solvers (user intentions) using Trusted Execution Environment (TEE) technology. This project consists of smart contracts for managing solver registration and a server for launching and managing TEE solvers.
+The NEAR Intents TEE Solver Registry is a protocol that enables secure and private execution of NEAR Intents solvers using Trusted Execution Environment (TEE) technology. This project consists of smart contracts for managing solver registration and a server for launching and managing TEE solvers. 
 
-This protocol allows liquidity pools creation for NEAR Intents, which will be extended to support adding and removing liquidity in next iteration.
+This protocol allows liquidity pools creation for NEAR Intents. Liquidity providers can transfer funds into the pools' smart contracts. Only the solvers who're running within TEE with the approved Docker images can be registered and authorized to operate against the pools' assets.
 
 ## Overview
 
