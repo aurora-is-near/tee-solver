@@ -1,6 +1,11 @@
 import { getConfig } from "../config";
 import { range } from "../utils/array";
+import { logger } from "../utils/logger";
+import { Intents, INTENTS_TOKENS, TOKEN_INFO } from "./intents";
 import { viewFunction } from "./utils";
+import Big from "big.js";
+
+const config = getConfig();
 
 export interface WorkerInfo {
   account_id: string;
@@ -22,16 +27,14 @@ export interface PoolInfo {
 
 export class SolverRegistry {
   private solverRegistryContract: string | null = null;
+  private intents: Intents | null = null;
 
   constructor() {
     if (this.solverRegistryContract) {
       return;
     }
-    const config = getConfig();
-
-    console.log('config', config);
-
     this.solverRegistryContract = config.near.contract.solverRegistry;
+    this.intents = new Intents();
   }
 
   public async getPoolLen(): Promise<number> {
@@ -48,6 +51,35 @@ export class SolverRegistry {
       methodName: 'get_pool',
       args: { pool_id: poolId },
     });
+  }
+
+  public async getPoolContractId(poolId: number): Promise<string> {
+    return `pool-${poolId}.${this.solverRegistryContract}`;
+  }
+
+  public async getPoolBalances(poolId: number): Promise<Record<string, string>> {
+    const poolContractId = await this.getPoolContractId(poolId);
+    const pool = await this.getPool(poolId);
+    const tokenIds = pool.token_ids.map(tokenId => `nep141:${tokenId}`);
+    const balances = await this.intents?.getBalances(poolContractId, tokenIds) ?? [];
+    return tokenIds.reduce((acc, tokenId, index) => {
+      acc[tokenId] = balances[index];
+      return acc;
+    }, {} as Record<string, string>);
+  }
+
+  public async hasEnoughBalancesInPool(poolId: number): Promise<boolean> {
+    const poolBalances = await this.getPoolBalances(poolId);
+    logger.info(`Pool ${poolId} token balances: ${JSON.stringify(poolBalances, null, 2)}`);
+
+    function hasBalance(tokenId: string): boolean {
+      return !!poolBalances[tokenId] && Big(poolBalances[tokenId]).gte(Big(config.pool.minimumNearBalance).mul(10 ** TOKEN_INFO[tokenId].decimals));
+    }
+
+    // At least one token in the pair is wNEAR or USDC or USDT with enough balances
+    return hasBalance(INTENTS_TOKENS.wNEAR)
+      || hasBalance(INTENTS_TOKENS.USDC)
+      || hasBalance(INTENTS_TOKENS.USDT);
   }
 
   public async getWorkerLen(): Promise<number> {
