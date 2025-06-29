@@ -34,7 +34,7 @@ export async function deploySolvers() {
 export async function fundSolvers() {
   logger.info('---- Funding Solvers ---');
 
-  const config = await getConfig();
+  const config = getConfig();
   const phala = new PhalaCloudService();
   const solverRegistry = new SolverRegistry();
   

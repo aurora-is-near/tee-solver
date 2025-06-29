@@ -23,16 +23,18 @@ export interface PoolInfo {
 export class SolverRegistry {
   private solverRegistryContract: string | null = null;
 
-  async init() {
+  constructor() {
     if (this.solverRegistryContract) {
       return;
     }
-    const config = await getConfig();
+    const config = getConfig();
+
+    console.log('config', config);
+
     this.solverRegistryContract = config.near.contract.solverRegistry;
   }
 
   public async getPoolLen(): Promise<number> {
-    await this.init();
     return await viewFunction({
       contractId: this.solverRegistryContract!,
       methodName: 'get_pool_len',
@@ -41,7 +43,6 @@ export class SolverRegistry {
   }
 
   public async getPool(poolId: number): Promise<PoolInfo> {
-    await this.init();
     return await viewFunction({
       contractId: this.solverRegistryContract!,
       methodName: 'get_pool',
@@ -50,7 +51,6 @@ export class SolverRegistry {
   }
 
   public async getWorkerLen(): Promise<number> {
-    await this.init();
     return await viewFunction({
       contractId: this.solverRegistryContract!,
       methodName: 'get_worker_len',
@@ -59,7 +59,6 @@ export class SolverRegistry {
   }
 
   public async getWorker(accountId: string): Promise<WorkerInfo> {
-    await this.init();
     return await viewFunction({
       contractId: this.solverRegistryContract!,
       methodName: 'get_worker',
@@ -70,8 +69,6 @@ export class SolverRegistry {
   }
 
   public async getWorkers(): Promise<WorkerInfo[]> {
-    await this.init();
-
     const workerLen = await this.getWorkerLen();
     const limit = 100;
     const workers = [];
@@ -90,8 +87,6 @@ export class SolverRegistry {
   }
 
   public async getPoolsWithoutWorkers(): Promise<number[]> {
-    await this.init();
-
     const poolLen = await this.getPoolLen();
 
     const workers = await this.getWorkers();
