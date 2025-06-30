@@ -73,7 +73,8 @@ export class SolverRegistry {
     logger.info(`Pool ${poolId} token balances: ${JSON.stringify(poolBalances, null, 2)}`);
 
     function hasBalance(tokenId: string): boolean {
-      return !!poolBalances[tokenId] && Big(poolBalances[tokenId]).gte(Big(config.pool.minimumNearBalance).mul(10 ** TOKEN_INFO[tokenId].decimals));
+      const minBalance = tokenId === INTENTS_TOKENS.wNEAR ? config.pool.minimumNearBalance : config.pool.minimumStableCoinBalance;
+      return !!poolBalances[tokenId] && Big(poolBalances[tokenId]).gte(Big(minBalance).mul(Big(10).pow(TOKEN_INFO[tokenId].decimals)));
     }
 
     // At least one token in the pair is wNEAR or USDC or USDT with enough balances
