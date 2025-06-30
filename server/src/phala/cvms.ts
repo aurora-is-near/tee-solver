@@ -27,6 +27,10 @@ export class PhalaCloudService {
   }
 
   async createSolverCvm(poolId: number, tokenIds: string[], fee: number): Promise<void> {
+    if (fee < 0 || fee > 10000) { // Assuming basis points (0.00% to 100.00%)
+      throw new Error('Invalid fee value. Expected fee in basis points (e.g., 500 for 5%).');
+    }
+
     const config = await getConfig();
 
     // const composePath = join(process.cwd(), `docker-compose.yaml`);
