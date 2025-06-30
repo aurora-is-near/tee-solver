@@ -39,7 +39,7 @@ near view $USDC_TOKEN ft_balance_of '{"account_id":"'$INTENTS_CONTRACT'"}'
 near view $USDC_TOKEN ft_balance_of '{"account_id":"'$SOLVER_REGISTRY_CONTRACT'"}'
 near view $USDC_TOKEN ft_balance_of '{"account_id":"'$SOLVER_TESTER_ACCOUNT'"}'
 
-# check balance (wNAER)
+# check balance (wNEAR)
 near view $WNEAR_TOKEN ft_balance_of '{"account_id":"'$INTENTS_CONTRACT'"}'
 near view $WNEAR_TOKEN ft_balance_of '{"account_id":"'$SOLVER_REGISTRY_CONTRACT'"}'
 near view $WNEAR_TOKEN ft_balance_of '{"account_id":"'$SOLVER_TESTER_ACCOUNT'"}'
