@@ -26,6 +26,12 @@ export class PhalaCloudService {
     logger.info('Phala auth configured successfully');
   }
 
+  /**
+   * Create a solver CVM for a given pool.
+   * @param poolId - The ID of the pool.
+   * @param tokenIds - The IDs of the tokens in the pool.
+   * @param fee - The fee of the pool in basis points.
+   */
   async createSolverCvm(poolId: number, tokenIds: string[], fee: number): Promise<void> {
     if (fee < 0 || fee > 10000) { // Assuming basis points (0.00% to 100.00%)
       throw new Error('Invalid fee value. Expected fee in basis points (e.g., 500 for 5%).');
