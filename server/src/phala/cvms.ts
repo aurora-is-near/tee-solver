@@ -26,7 +26,7 @@ export class PhalaCloudService {
     logger.info('Phala auth configured successfully');
   }
 
-  async createSolverCvm(poolId: number, tokenIds: string[]): Promise<void> {
+  async createSolverCvm(poolId: number, tokenIds: string[], fee: number): Promise<void> {
     const config = await getConfig();
 
     // const composePath = join(process.cwd(), `docker-compose.yaml`);
@@ -38,6 +38,7 @@ SOLVER_REGISTRY_CONTRACT=${config.near.contract.solverRegistry}
 SOLVER_POOL_ID=${poolId}
 AMM_TOKEN1_ID=${tokenIds[0]}
 AMM_TOKEN2_ID=${tokenIds[1]}
+MARGIN_PERCENT=${(fee / 100).toFixed(2)}
     `;
     writeFileSync(envPath, envContent);
 

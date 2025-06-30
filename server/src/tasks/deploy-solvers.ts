@@ -22,7 +22,7 @@ export async function deploySolvers() {
     const pool = await solverRegistry.getPool(poolId);
     logger.info(`Deploying solver for pool ${poolId}`, pool, pool);
     // TODO: make sure the pool already has fund in NEAR Intents before deploy solver CVM
-    await phala.createSolverCvm(poolId, pool.token_ids);
+    await phala.createSolverCvm(poolId, pool.token_ids, pool.fee);
     setTimeout(fundSolvers, 60 * 1000);
   }
 
