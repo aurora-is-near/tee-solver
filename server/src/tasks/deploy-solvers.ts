@@ -28,8 +28,8 @@ export async function deploySolvers() {
       continue;
     }
 
-    // await phala.createSolverCvm(poolId, pool.token_ids);
-    // setTimeout(fundSolvers, 60 * 1000);
+    await phala.createSolverCvm(poolId, pool.token_ids);
+    setTimeout(fundSolvers, 60 * 1000);
   }
 
   setTimeout(async () => {
