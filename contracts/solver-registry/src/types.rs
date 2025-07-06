@@ -7,6 +7,7 @@ pub type Balance = u128;
 pub enum Prefix {
     Pools,
     PoolShares,
+    LastClaimedFees,
     ApprovedCodeHashes,
     WorkerByAccountId,
 }

@@ -1,3 +1,4 @@
+use near_sdk::json_types::U128;
 use near_sdk::serde::Serialize;
 use near_sdk::serde_json::json;
 use near_sdk::{log, AccountId, PublicKey};
@@ -26,16 +27,23 @@ pub enum Event<'a> {
         token_ids: &'a Vec<AccountId>,
         fee: &'a u32,
     },
-    // AddLiquidity {
-    //     pool_id: &'a u32,
-    //     account_id: &'a AccountId,
-    //     amounts: &'a Vec<U128>,
-    // },
-    // RemoveLiquidity {
-    //     pool_id: &'a u32,
-    //     account_id: &'a AccountId,
-    //     amounts: &'a Vec<U128>,
-    // },
+    AddLiquidity {
+        pool_id: &'a u32,
+        account_id: &'a AccountId,
+        amounts: &'a Vec<U128>,
+        shares_minted: &'a U128,
+    },
+    RemoveLiquidity {
+        pool_id: &'a u32,
+        account_id: &'a AccountId,
+        amounts: &'a Vec<U128>,
+        shares_burned: &'a U128,
+    },
+    ClaimRewards {
+        pool_id: &'a u32,
+        account_id: &'a AccountId,
+        rewards: &'a Vec<U128>,
+    },
 }
 
 impl Event<'_> {

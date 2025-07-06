@@ -9,4 +9,10 @@ trait FungibleTokenContract {
         memo: Option<String>,
         msg: String,
     ) -> PromiseOrValue<U128>;
+
+    fn ft_transfer(
+        receiver_id: AccountId,
+        amount: U128,
+        memo: Option<String>,
+    );
 }
