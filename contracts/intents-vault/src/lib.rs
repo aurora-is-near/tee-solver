@@ -1,11 +1,29 @@
 use near_sdk::{
-    assert_one_yocto, env, ext_contract, near, require, AccountId, NearToken, Promise, PublicKey,
+    assert_one_yocto, env, ext_contract, json_types::U128, near, require, AccountId, NearToken,
+    Promise, PromiseOrValue, PublicKey,
 };
 
 #[allow(dead_code)]
 #[ext_contract(ext_intents)]
 trait IntentsContract {
+    /// Registers or re-activates `public_key` under the caller account_id.
+    ///
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
     fn add_public_key(public_key: PublicKey);
+
+    /// Returns number of tokens were successfully withdrawn.
+    ///
+    /// Optionally can specify `storage_deposit` for `receiver_id` on `token`.
+    /// The amount will be subtracted from user's NEP-141 `wNEAR` balance.
+    ///
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
+    fn ft_withdraw(
+        token: AccountId,
+        receiver_id: AccountId,
+        amount: U128,
+        memo: Option<String>,
+        msg: Option<String>,
+    ) -> PromiseOrValue<U128>;
 }
 
 #[derive(Default)]
@@ -27,6 +45,24 @@ impl Contract {
         ext_intents::ext(intents_contract_id)
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .add_public_key(public_key)
+    }
+
+    #[payable]
+    pub fn ft_withdraw(
+        &mut self,
+        intents_contract_id: AccountId,
+        token: AccountId,
+        receiver_id: AccountId,
+        amount: U128,
+        memo: Option<String>,
+        msg: Option<String>,
+    ) -> Promise {
+        assert_one_yocto();
+        self.require_parent_account();
+
+        ext_intents::ext(intents_contract_id)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .ft_withdraw(token, receiver_id, amount, memo, msg)
     }
 }
 

@@ -278,34 +278,65 @@ impl Contract {
         let account_id = env::predecessor_account_id();
 
         // Withdraw funds from accounts first
-        self.withdraw_from_accounts(pool_id, &account_id, &amounts);
+        let token_ids = self.withdraw_from_accounts(pool_id, &account_id, &amounts);
 
         // Add liquidity to the pool
         let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
         let shares_to_mint = pool.add_liquidity(&account_id, amounts.clone());
 
-        // TODO: transfer tokens to NEAR Intents account
+        // transfer tokens to NEAR Intents account
+        ext_ft::ext(token_ids[0].clone())
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .ft_transfer_call(
+                self.intents_contract_id.clone(),
+                U128(amounts[0]),
+                Some("deposit into pool".to_string()),
+                self.get_pool_account_id(pool_id).to_string(),
+            )
+            .and(
+                ext_ft::ext(token_ids[1].clone())
+                    .with_attached_deposit(NearToken::from_yoctonear(1))
+                    .ft_transfer_call(
+                        self.intents_contract_id.clone(),
+                        U128(amounts[1]),
+                        Some("deposit into pool".to_string()),
+                        self.get_pool_account_id(pool_id).to_string(),
+                    ),
+            )
+            .then(Self::ext(env::current_account_id()).on_add_liquidity(
+                pool_id,
+                amounts.iter().map(|x| U128(*x)).collect(),
+                account_id,
+                U128(shares_to_mint),
+            ))
+            .into()
     }
 
     #[private]
-    pub fn on_add_liquidity_complete(
+    pub fn on_add_liquidity(
         &self,
         pool_id: u32,
         amounts: Vec<U128>,
         account_id: AccountId,
         shares_to_mint: U128,
-    ) -> PromiseOrValue<U128> {
-        // TODO: add liquidity event
+        #[callback_vec] used_fund: Vec<Result<U128, PromiseError>>,
+    ) -> U128 {
+        if used_fund.iter().all(|x| x.is_ok()) {
+            Event::AddLiquidity {
+                pool_id: &pool_id,
+                account_id: &account_id,
+                amounts: &amounts.into_iter().map(|a| a.into()).collect(),
+                shares_minted: &shares_to_mint,
+            }
+            .emit();
 
-        Event::AddLiquidity {
-            pool_id: &pool_id,
-            account_id: &account_id,
-            amounts: &amounts.into_iter().map(|a| a.into()).collect(),
-            shares_minted: &shares_to_mint,
+            shares_to_mint
+        } else {
+            // TODO: rollback the minted shares
+            // The failed transfer should be kept in `lost_and_found` and can be withdrawn by the user
+
+            shares_to_mint
         }
-        .emit();
-
-        PromiseOrValue::Value(shares_to_mint)
     }
 
     /// Remove liquidity from a pool
@@ -324,49 +355,63 @@ impl Contract {
         let amounts_to_return = pool.remove_liquidity(&account_id, shares_to_burn);
         self.pools.flush();
 
-        // Transfer tokens back to the user
-        let mut promises = Vec::new();
-        for (i, amount) in amounts_to_return.iter().enumerate() {
-            if *amount > 0 {
-                let token_id = &token_ids[i];
-                promises.push(
-                    // TODO: `ft_transfer` with static gas
-                    ext_ft::ext(token_id.clone())
-                        .with_attached_deposit(NearToken::from_yoctonear(1))
-                        .ft_transfer(account_id.clone(), U128(*amount), None),
-                );
-            }
-        }
-
-        if promises.is_empty() {
-            PromiseOrValue::Value(amounts_to_return.into_iter().map(|a| U128(a)).collect())
-        } else {
-            // TODO: execute callback after `ft_transfer` calls complete
-            Promise::new(env::current_account_id())
-                .then(
-                    Self::ext(env::current_account_id())
-                        .with_static_gas(GAS_REMOVE_LIQUIDITY_CALLBACK)
-                        .on_remove_liquidity_complete(
-                            amounts_to_return.into_iter().map(|a| U128(a)).collect(),
-                        ),
-                )
-                .into()
-        }
+        // TODO: ft_withdraw with static gas
+        // TODO: handle cases when user is not a NEAR account
+        ext_intents_vault::ext(self.intents_contract_id.clone())
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .ft_withdraw(
+                self.intents_contract_id.clone(),
+                token_ids[0].clone(),
+                account_id.clone(),
+                U128(amounts_to_return[0]),
+                None,
+                None,
+            )
+            .and(
+                ext_intents_vault::ext(self.intents_contract_id.clone())
+                    .with_attached_deposit(NearToken::from_yoctonear(1))
+                    .ft_withdraw(
+                        self.intents_contract_id.clone(),
+                        token_ids[1].clone(),
+                        account_id.clone(),
+                        U128(amounts_to_return[1]),
+                        None,
+                        None,
+                    ),
+            )
+            .then(Self::ext(env::current_account_id()).on_remove_liquidity(
+                pool_id,
+                account_id.clone(),
+                amounts_to_return.into_iter().map(|a| U128(a)).collect(),
+                U128(shares_to_burn),
+            ))
+            .into()
     }
 
     #[private]
-    pub fn on_remove_liquidity_complete(&self, amounts: Vec<U128>) -> Vec<U128> {
-        // TODO: remove liquidity event
+    pub fn on_remove_liquidity(
+        &self,
+        pool_id: u32,
+        account_id: AccountId,
+        amounts: Vec<U128>,
+        shares: U128,
+        #[callback_vec] results: Vec<Result<U128, PromiseError>>,
+    ) -> Vec<U128> {
+        if results.iter().all(|x| x.is_ok()) {
+            Event::RemoveLiquidity {
+                pool_id: &pool_id,
+                account_id: &account_id,
+                amounts: &amounts,
+                shares_burned: &shares,
+            }
+            .emit();
 
-        // Event::RemoveLiquidity {
-        //     pool_id: &pool_id,
-        //     account_id: &account_id,
-        //     amounts: &amounts_to_return.into_iter().map(|a| U128(a)).collect(),
-        //     shares_burned: &shares,
-        // }
-        // .emit();
-
-        amounts
+            amounts
+        } else {
+            // TODO: rollback the removed liquidity
+            // The failed transfer should be kept in `lost_and_found` and can be withdrawn by the user
+            amounts
+        }
     }
 
     /// Claim accumulated rewards for a liquidity provider
@@ -513,7 +558,7 @@ impl Contract {
         pool_id: u32,
         account_id: &AccountId,
         amounts: &[Balance],
-    ) {
+    ) -> Vec<AccountId> {
         let token_ids = self
             .pools
             .get(pool_id)
@@ -524,5 +569,7 @@ impl Contract {
             let amount = amounts[i];
             self.withdraw_from_account(account_id.clone(), token_id.clone(), amount);
         }
+
+        token_ids
     }
 }

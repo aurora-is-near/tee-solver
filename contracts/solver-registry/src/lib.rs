@@ -3,7 +3,9 @@ use hex::{decode, encode};
 use near_sdk::{
     assert_one_yocto,
     env::{self, block_timestamp},
-    ext_contract, log, near, require,
+    ext_contract,
+    json_types::U128,
+    log, near, require,
     store::{IterableMap, IterableSet, Vector},
     AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseError, PublicKey,
 };
@@ -49,6 +51,15 @@ pub struct Contract {
 #[ext_contract(ext_intents_vault)]
 trait IntentsVaultContract {
     fn add_public_key(intents_contract_id: AccountId, public_key: PublicKey);
+
+    fn ft_withdraw(
+        intents_contract_id: AccountId,
+        token: AccountId,
+        receiver_id: AccountId,
+        amount: U128,
+        memo: Option<String>,
+        msg: Option<String>,
+    );
 }
 
 #[near]
