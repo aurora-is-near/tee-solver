@@ -37,7 +37,6 @@ impl Contract {
             .collect()
     }
 
-
     /// Get pool information
     pub fn get_pool_info(&self, pool_id: u32) -> Option<PoolInfo> {
         self.pools.get(pool_id).map(|pool| PoolInfo {

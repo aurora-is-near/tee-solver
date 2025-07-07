@@ -23,14 +23,7 @@ async fn test_create_liquidity_pool() -> Result<(), Box<dyn std::error::Error>> 
     )
     .await?;
 
-    let usdc = create_ft(
-        &sandbox,
-        "USD Coin",
-        "USDC",
-        6,
-        10_000_000_000_000_000,
-    )
-    .await?;
+    let usdc = create_ft(&sandbox, "USD Coin", "USDC", 6, 10_000_000_000_000_000).await?;
 
     let owner = create_account(&sandbox, "owner", 10).await?;
     let mock_intents = deploy_mock_intents(&sandbox).await?;
@@ -51,15 +44,19 @@ async fn test_create_liquidity_pool() -> Result<(), Box<dyn std::error::Error>> 
         .gas(NearGas::from_tgas(300))
         .transact()
         .await?;
-    
-    assert!(result.is_success(), "Failed to create liquidity pool: {:?}", result.into_result().unwrap_err());
+
+    assert!(
+        result.is_success(),
+        "Failed to create liquidity pool: {:?}",
+        result.into_result().unwrap_err()
+    );
 
     // Verify pool was created
     let pool_info = solver_registry
         .view("get_pool_info")
         .args_json(json!({"pool_id": 0}))
         .await?;
-    
+
     let pool: PoolInfo = serde_json::from_slice(&pool_info.result).unwrap();
     assert_eq!(pool.token_ids, vec![wnear.id(), usdc.id()]);
     assert_eq!(pool.fee, 300);
@@ -87,14 +84,7 @@ async fn test_add_liquidity() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await?;
 
-    let usdc = create_ft(
-        &sandbox,
-        "USD Coin",
-        "USDC",
-        6,
-        10_000_000_000_000_000,
-    )
-    .await?;
+    let usdc = create_ft(&sandbox, "USD Coin", "USDC", 6, 10_000_000_000_000_000).await?;
 
     let owner = create_account(&sandbox, "owner", 10).await?;
     let alice = create_account(&sandbox, "alice", 10).await?;
@@ -192,7 +182,7 @@ async fn test_add_liquidity() -> Result<(), Box<dyn std::error::Error>> {
             "account_id": alice.id()
         }))
         .await?;
-    
+
     let shares_amount: U128 = serde_json::from_slice(&shares.result).unwrap();
     assert!(shares_amount.0 > 0, "Shares should be greater than 0");
 
@@ -201,7 +191,7 @@ async fn test_add_liquidity() -> Result<(), Box<dyn std::error::Error>> {
         .view("get_pool_info")
         .args_json(json!({"pool_id": 0}))
         .await?;
-    
+
     let pool: PoolInfo = serde_json::from_slice(&pool_info.result).unwrap();
     assert_eq!(pool.amounts[0].0, wnear_amount);
     assert_eq!(pool.amounts[1].0, usdc_amount);
@@ -226,14 +216,7 @@ async fn test_remove_liquidity() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await?;
 
-    let usdc = create_ft(
-        &sandbox,
-        "USD Coin",
-        "USDC",
-        6,
-        10_000_000_000_000_000,
-    )
-    .await?;
+    let usdc = create_ft(&sandbox, "USD Coin", "USDC", 6, 10_000_000_000_000_000).await?;
 
     let owner = create_account(&sandbox, "owner", 10).await?;
     let alice = create_account(&sandbox, "alice", 10).await?;
@@ -255,7 +238,7 @@ async fn test_remove_liquidity() -> Result<(), Box<dyn std::error::Error>> {
             "account_id": alice.id()
         }))
         .await?;
-    
+
     let shares_amount: U128 = serde_json::from_slice(&shares.result).unwrap();
     let shares_to_remove = shares_amount.0 / 2; // Remove half of shares
 
@@ -287,9 +270,12 @@ async fn test_remove_liquidity() -> Result<(), Box<dyn std::error::Error>> {
             "account_id": alice.id()
         }))
         .await?;
-    
+
     let remaining_shares_amount: U128 = serde_json::from_slice(&remaining_shares.result).unwrap();
-    assert_eq!(remaining_shares_amount.0, shares_amount.0 - shares_to_remove);
+    assert_eq!(
+        remaining_shares_amount.0,
+        shares_amount.0 - shares_to_remove
+    );
 
     println!("✅ test_remove_liquidity passed");
     Ok(())
@@ -310,14 +296,7 @@ async fn test_claim_rewards() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await?;
 
-    let usdc = create_ft(
-        &sandbox,
-        "USD Coin",
-        "USDC",
-        6,
-        10_000_000_000_000_000,
-    )
-    .await?;
+    let usdc = create_ft(&sandbox, "USD Coin", "USDC", 6, 10_000_000_000_000_000).await?;
 
     let owner = create_account(&sandbox, "owner", 10).await?;
     let alice = create_account(&sandbox, "alice", 10).await?;
@@ -339,7 +318,7 @@ async fn test_claim_rewards() -> Result<(), Box<dyn std::error::Error>> {
             "account_id": alice.id()
         }))
         .await?;
-    
+
     let rewards: Vec<U128> = serde_json::from_slice(&pending_rewards.result).unwrap();
     assert_eq!(rewards[0].0, 0);
     assert_eq!(rewards[1].0, 0);
@@ -354,7 +333,7 @@ async fn test_claim_rewards() -> Result<(), Box<dyn std::error::Error>> {
         .gas(NearGas::from_tgas(200))
         .transact()
         .await?;
-    
+
     // This should fail as there are no rewards to claim
     assert!(!result.is_success());
 
@@ -384,14 +363,7 @@ async fn test_multiple_liquidity_providers() -> Result<(), Box<dyn std::error::E
     )
     .await?;
 
-    let usdc = create_ft(
-        &sandbox,
-        "USD Coin",
-        "USDC",
-        6,
-        10_000_000_000_000_000,
-    )
-    .await?;
+    let usdc = create_ft(&sandbox, "USD Coin", "USDC", 6, 10_000_000_000_000_000).await?;
 
     let owner = create_account(&sandbox, "owner", 10).await?;
     let alice = create_account(&sandbox, "alice", 10).await?;
@@ -423,12 +395,30 @@ async fn test_multiple_liquidity_providers() -> Result<(), Box<dyn std::error::E
     // Alice adds liquidity first
     let alice_wnear = NearToken::from_near(10).as_yoctonear();
     let alice_usdc = 50_000_000u128;
-    add_liquidity_for_user(&solver_registry, &wnear, &usdc, &alice, 0, alice_wnear, alice_usdc).await?;
+    add_liquidity_for_user(
+        &solver_registry,
+        &wnear,
+        &usdc,
+        &alice,
+        0,
+        alice_wnear,
+        alice_usdc,
+    )
+    .await?;
 
     // Bob adds liquidity second
     let bob_wnear = NearToken::from_near(20).as_yoctonear();
     let bob_usdc = 100_000_000u128;
-    add_liquidity_for_user(&solver_registry, &wnear, &usdc, &bob, 0, bob_wnear, bob_usdc).await?;
+    add_liquidity_for_user(
+        &solver_registry,
+        &wnear,
+        &usdc,
+        &bob,
+        0,
+        bob_wnear,
+        bob_usdc,
+    )
+    .await?;
 
     // Verify both users have shares
     let alice_shares = solver_registry
@@ -438,7 +428,7 @@ async fn test_multiple_liquidity_providers() -> Result<(), Box<dyn std::error::E
             "account_id": alice.id()
         }))
         .await?;
-    
+
     let bob_shares = solver_registry
         .view("get_liquidity_provider_shares")
         .args_json(json!({
@@ -446,7 +436,7 @@ async fn test_multiple_liquidity_providers() -> Result<(), Box<dyn std::error::E
             "account_id": bob.id()
         }))
         .await?;
-    
+
     let alice_shares_amount: U128 = serde_json::from_slice(&alice_shares.result).unwrap();
     let bob_shares_amount: U128 = serde_json::from_slice(&bob_shares.result).unwrap();
 
@@ -458,11 +448,14 @@ async fn test_multiple_liquidity_providers() -> Result<(), Box<dyn std::error::E
         .view("get_pool_info")
         .args_json(json!({"pool_id": 0}))
         .await?;
-    
+
     let pool: PoolInfo = serde_json::from_slice(&pool_info.result).unwrap();
     assert_eq!(pool.amounts[0].0, alice_wnear + bob_wnear);
     assert_eq!(pool.amounts[1].0, alice_usdc + bob_usdc);
-    assert_eq!(pool.shares_total_supply.0, alice_shares_amount.0 + bob_shares_amount.0);
+    assert_eq!(
+        pool.shares_total_supply.0,
+        alice_shares_amount.0 + bob_shares_amount.0
+    );
 
     println!("✅ test_multiple_liquidity_providers passed");
     Ok(())
@@ -483,14 +476,7 @@ async fn test_invalid_operations() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await?;
 
-    let usdc = create_ft(
-        &sandbox,
-        "USD Coin",
-        "USDC",
-        6,
-        10_000_000_000_000_000,
-    )
-    .await?;
+    let usdc = create_ft(&sandbox, "USD Coin", "USDC", 6, 10_000_000_000_000_000).await?;
 
     let owner = create_account(&sandbox, "owner", 10).await?;
     let alice = create_account(&sandbox, "alice", 10).await?;
@@ -532,7 +518,10 @@ async fn test_invalid_operations() -> Result<(), Box<dyn std::error::Error>> {
         .gas(NearGas::from_tgas(200))
         .transact()
         .await?;
-    assert!(!result.is_success(), "Should fail without depositing tokens first");
+    assert!(
+        !result.is_success(),
+        "Should fail without depositing tokens first"
+    );
 
     println!("✅ test_invalid_operations passed");
     Ok(())
@@ -579,7 +568,16 @@ async fn setup_tokens_and_liquidity(
     // Add initial liquidity
     let wnear_amount = NearToken::from_near(10).as_yoctonear();
     let usdc_amount = 50_000_000u128;
-    add_liquidity_for_user(solver_registry, wnear, usdc, user, 0, wnear_amount, usdc_amount).await?;
+    add_liquidity_for_user(
+        solver_registry,
+        wnear,
+        usdc,
+        user,
+        0,
+        wnear_amount,
+        usdc_amount,
+    )
+    .await?;
 
     Ok(())
 }
@@ -679,7 +677,7 @@ async fn get_ft_balance(
             "account_id": account.id()
         }))
         .await?;
-    
+
     let balance: U128 = serde_json::from_slice(&result.result).unwrap();
     Ok(balance.0)
 }

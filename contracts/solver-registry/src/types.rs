@@ -1,4 +1,4 @@
-use near_sdk::{near, BorshStorageKey};
+use near_sdk::{near, AccountId, BorshStorageKey};
 
 pub type Balance = u128;
 
@@ -10,4 +10,6 @@ pub enum Prefix {
     LastClaimedFees,
     ApprovedCodeHashes,
     WorkerByAccountId,
+    Accounts,
+    AccountDeposits { account_id: AccountId },
 }

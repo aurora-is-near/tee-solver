@@ -44,6 +44,16 @@ pub enum Event<'a> {
         account_id: &'a AccountId,
         rewards: &'a Vec<U128>,
     },
+    Deposit {
+        account_id: &'a AccountId,
+        token_id: &'a AccountId,
+        amount: &'a U128,
+    },
+    Withdraw {
+        account_id: &'a AccountId,
+        token_id: &'a AccountId,
+        amount: &'a U128,
+    },
 }
 
 impl Event<'_> {

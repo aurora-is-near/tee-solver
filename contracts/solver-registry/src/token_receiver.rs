@@ -7,6 +7,7 @@ const ERR_MALFORMED_MESSAGE: &str = "Invalid transfer action message";
 
 #[near(serializers=[json])]
 enum TokenReceiverMessage {
+    Deposit,
     DepositIntoPool { pool_id: u32 },
 }
 
@@ -27,8 +28,12 @@ impl Contract {
         let message =
             serde_json::from_str::<TokenReceiverMessage>(&msg).expect(ERR_MALFORMED_MESSAGE);
         match message {
+            TokenReceiverMessage::Deposit => {
+                self.deposit_into_account(sender_id.clone(), token_id, amount.0);
+                PromiseOrValue::Value(U128(0))
+            }
             TokenReceiverMessage::DepositIntoPool { pool_id } => {
-                self.deposit_into_pool(pool_id, &token_id, &sender_id, amount.0)
+                self.deposit_into_pool(pool_id, &token_id, amount.0)
             }
         }
     }

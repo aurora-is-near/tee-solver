@@ -8,10 +8,12 @@ use near_sdk::{
     AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseError, PublicKey,
 };
 
+use crate::account::*;
 use crate::events::*;
 use crate::pool::*;
 use crate::types::*;
 
+mod account;
 mod admin;
 mod collateral;
 mod events;
@@ -40,6 +42,7 @@ pub struct Contract {
     pools: Vector<Pool>,
     approved_codehashes: IterableSet<String>,
     worker_by_account_id: IterableMap<AccountId, Worker>,
+    accounts: IterableMap<AccountId, Account>,
 }
 
 #[allow(dead_code)]
@@ -59,6 +62,7 @@ impl Contract {
             pools: Vector::new(Prefix::Pools),
             approved_codehashes: IterableSet::new(Prefix::ApprovedCodeHashes),
             worker_by_account_id: IterableMap::new(Prefix::WorkerByAccountId),
+            accounts: IterableMap::new(Prefix::Accounts),
         }
     }
 

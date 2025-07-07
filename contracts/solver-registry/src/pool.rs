@@ -1,7 +1,10 @@
 use near_sdk::json_types::U128;
-// use near_sdk::json_types::U128;
 use near_sdk::store::LookupMap;
-use near_sdk::{assert_one_yocto, env, near, require, AccountId, Gas, NearToken, Promise, PromiseError, PromiseOrValue};
+use near_sdk::{
+    assert_one_yocto, env, near, require, AccountId, Gas, NearToken, Promise, PromiseError,
+    PromiseOrValue,
+};
+use sha2::digest::consts::U12;
 
 use crate::events::Event;
 use crate::ext::ext_ft;
@@ -70,10 +73,17 @@ impl Pool {
         }
     }
 
+    pub fn get_token_ids(&self) -> Vec<AccountId> {
+        self.token_ids.clone()
+    }
+
     /// Add liquidity to the pool
     pub fn add_liquidity(&mut self, account_id: &AccountId, amounts: Vec<Balance>) -> Balance {
         require!(amounts.len() == 2, "Must have exactly 2 amounts");
-        require!(amounts[0] > 0 && amounts[1] > 0, "Amounts must be greater than 0");
+        require!(
+            amounts[0] > 0 && amounts[1] > 0,
+            "Amounts must be greater than 0"
+        );
 
         // Calculate shares to mint
         let shares_to_mint = self.calculate_shares(&amounts);
@@ -86,16 +96,21 @@ impl Pool {
 
         // Mint shares to liquidity provider
         let current_shares = self.shares.get(account_id).unwrap_or(&0u128);
-        self.shares.insert(account_id.clone(), current_shares + shares_to_mint);
+        self.shares
+            .insert(account_id.clone(), current_shares + shares_to_mint);
         self.shares_total_supply += shares_to_mint;
 
         shares_to_mint
     }
 
     /// Remove liquidity from the pool
-    pub fn remove_liquidity(&mut self, account_id: &AccountId, shares_to_burn: Balance) -> Vec<Balance> {
+    pub fn remove_liquidity(
+        &mut self,
+        account_id: &AccountId,
+        shares_to_burn: Balance,
+    ) -> Vec<Balance> {
         require!(shares_to_burn > 0, "Shares must be greater than 0");
-        
+
         let current_shares = self.shares.get(account_id).unwrap_or(&0u128);
         require!(current_shares >= &shares_to_burn, ERR_INSUFFICIENT_SHARES);
 
@@ -156,7 +171,8 @@ impl Pool {
 
     /// Mark fees as claimed for a liquidity provider
     pub fn mark_fees_claimed(&mut self, account_id: &AccountId) {
-        self.last_claimed_fees.insert(account_id.clone(), self.fees_per_share.clone());
+        self.last_claimed_fees
+            .insert(account_id.clone(), self.fees_per_share.clone());
     }
 
     /// Calculate shares to mint based on deposited amounts
@@ -168,7 +184,11 @@ impl Pool {
             // Calculate shares based on current pool ratios
             let share0 = (amounts[0] * self.shares_total_supply) / self.amounts[0];
             let share1 = (amounts[1] * self.shares_total_supply) / self.amounts[1];
-            if share0 < share1 { share0 } else { share1 }
+            if share0 < share1 {
+                share0
+            } else {
+                share1
+            }
         }
     }
 
@@ -247,39 +267,50 @@ impl Contract {
 
     /// Add liquidity to a pool
     /// Users must call ft_transfer_call for each token before calling this function
-    /// TODO: shall we assert_one_yocto() here?
-    pub fn add_liquidity(
-        &mut self,
-        pool_id: u32,
-        amounts: Vec<U128>,
-    ) -> PromiseOrValue<U128> {        
+    #[payable]
+    pub fn add_liquidity(&mut self, pool_id: u32, amounts: Vec<U128>) -> PromiseOrValue<U128> {
+        assert_one_yocto();
+
         let amounts: Vec<Balance> = amounts.into_iter().map(|a| a.0).collect();
         require!(amounts.len() == 2, "Must have exactly 2 amounts");
         require!(amounts[0] > 0 && amounts[1] > 0, ERR_INVALID_AMOUNT);
 
-        let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
         let account_id = env::predecessor_account_id();
-        
+
+        // Withdraw funds from accounts first
+        self.withdraw_from_accounts(pool_id, &account_id, &amounts);
+
+        // Add liquidity to the pool
+        let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
         let shares_to_mint = pool.add_liquidity(&account_id, amounts.clone());
+
+        // TODO: transfer tokens to NEAR Intents account
+    }
+
+    #[private]
+    pub fn on_add_liquidity_complete(
+        &self,
+        pool_id: u32,
+        amounts: Vec<U128>,
+        account_id: AccountId,
+        shares_to_mint: U128,
+    ) -> PromiseOrValue<U128> {
+        // TODO: add liquidity event
 
         Event::AddLiquidity {
             pool_id: &pool_id,
             account_id: &account_id,
             amounts: &amounts.into_iter().map(|a| a.into()).collect(),
-            shares_minted: &U128(shares_to_mint),
+            shares_minted: &shares_to_mint,
         }
         .emit();
 
-        PromiseOrValue::Value(U128(shares_to_mint))
+        PromiseOrValue::Value(shares_to_mint)
     }
 
     /// Remove liquidity from a pool
     #[payable]
-    pub fn remove_liquidity(
-        &mut self,
-        pool_id: u32,
-        shares: U128,
-    ) -> PromiseOrValue<Vec<U128>> {
+    pub fn remove_liquidity(&mut self, pool_id: u32, shares: U128) -> PromiseOrValue<Vec<U128>> {
         assert_one_yocto();
 
         let shares_to_burn = shares.0;
@@ -302,7 +333,7 @@ impl Contract {
                     // TODO: `ft_transfer` with static gas
                     ext_ft::ext(token_id.clone())
                         .with_attached_deposit(NearToken::from_yoctonear(1))
-                        .ft_transfer(account_id.clone(), U128(*amount), None)
+                        .ft_transfer(account_id.clone(), U128(*amount), None),
                 );
             }
         }
@@ -315,17 +346,16 @@ impl Contract {
                 .then(
                     Self::ext(env::current_account_id())
                         .with_static_gas(GAS_REMOVE_LIQUIDITY_CALLBACK)
-                        .on_remove_liquidity_complete(amounts_to_return.into_iter().map(|a| U128(a)).collect())
+                        .on_remove_liquidity_complete(
+                            amounts_to_return.into_iter().map(|a| U128(a)).collect(),
+                        ),
                 )
                 .into()
         }
     }
 
     #[private]
-    pub fn on_remove_liquidity_complete(
-        &self,
-        amounts: Vec<U128>,
-    ) -> Vec<U128> {
+    pub fn on_remove_liquidity_complete(&self, amounts: Vec<U128>) -> Vec<U128> {
         // TODO: remove liquidity event
 
         // Event::RemoveLiquidity {
@@ -365,7 +395,7 @@ impl Contract {
                 promises.push(
                     ext_ft::ext(token_id.clone())
                         .with_attached_deposit(NearToken::from_yoctonear(1))
-                        .ft_transfer(account_id.clone(), U128(*reward), None)
+                        .ft_transfer(account_id.clone(), U128(*reward), None),
                 );
             }
         }
@@ -377,17 +407,16 @@ impl Contract {
                 .then(
                     Self::ext(env::current_account_id())
                         .with_static_gas(GAS_CLAIM_REWARDS_CALLBACK)
-                        .on_claim_rewards_complete(pending_rewards.into_iter().map(|r| U128(r)).collect())
+                        .on_claim_rewards_complete(
+                            pending_rewards.into_iter().map(|r| U128(r)).collect(),
+                        ),
                 )
                 .into()
         }
     }
 
     #[private]
-    pub fn on_claim_rewards_complete(
-        &self,
-        rewards: Vec<U128>,
-    ) -> Vec<U128> {
+    pub fn on_claim_rewards_complete(&self, rewards: Vec<U128>) -> Vec<U128> {
         // Event::ClaimRewards {
         //     pool_id: &pool_id,
         //     account_id: &account_id,
@@ -457,7 +486,6 @@ impl Contract {
         &self,
         pool_id: u32,
         token_id: &AccountId,
-        _sender_id: &AccountId,
         amount: Balance,
     ) -> PromiseOrValue<U128> {
         let pool = self.pools.get(pool_id).expect(ERR_POOL_NOT_FOUND);
@@ -477,5 +505,24 @@ impl Contract {
             )
             .then(Self::ext(env::current_account_id()).on_deposit_into_pool(U128(amount)))
             .into()
+    }
+
+    /// Withdraw balances from accounts and add to liquidity pool
+    fn withdraw_from_accounts(
+        &mut self,
+        pool_id: u32,
+        account_id: &AccountId,
+        amounts: &[Balance],
+    ) {
+        let token_ids = self
+            .pools
+            .get(pool_id)
+            .expect(ERR_POOL_NOT_FOUND)
+            .get_token_ids();
+
+        for (i, token_id) in token_ids.iter().enumerate() {
+            let amount = amounts[i];
+            self.withdraw_from_account(account_id.clone(), token_id.clone(), amount);
+        }
     }
 }
