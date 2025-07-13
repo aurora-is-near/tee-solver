@@ -347,8 +347,8 @@ impl Contract {
         let shares_to_burn = shares.0;
         require!(shares_to_burn > 0, "Shares must be greater than 0");
 
-        let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
         let account_id = env::predecessor_account_id();
+        let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
         let token_ids = pool.token_ids.clone();
 
         // Remove liquidity and get amounts to return
@@ -357,7 +357,8 @@ impl Contract {
 
         // TODO: ft_withdraw with static gas
         // TODO: handle cases when user is not a NEAR account
-        ext_intents_vault::ext(self.intents_contract_id.clone())
+        let pool_account_id = self.get_pool_account_id(pool_id);
+        ext_intents_vault::ext(pool_account_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .ft_withdraw(
                 self.intents_contract_id.clone(),
@@ -368,7 +369,7 @@ impl Contract {
                 None,
             )
             .and(
-                ext_intents_vault::ext(self.intents_contract_id.clone())
+                ext_intents_vault::ext(pool_account_id.clone())
                     .with_attached_deposit(NearToken::from_yoctonear(1))
                     .ft_withdraw(
                         self.intents_contract_id.clone(),
@@ -414,13 +415,28 @@ impl Contract {
         }
     }
 
+    /// Collect fees for a liquidity pool
+    /// This function is called when a worker swaps tokens
+    /// The fees are recorded to the liquidity pool contract
+    /// and can be claimed by the liquidity provider
+    /// TODO: whether transfer fees to the liquidity pool contract when collecting fees?
+    #[payable]
+    pub fn collect_liquidity_pool_fees(&mut self, pool_id: u32, fees: Vec<Balance>) {
+        let worker = self.require_approved_worker();
+        require!(worker.pool_id == pool_id, "Worker is not associated with this pool");
+
+        let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
+        pool.update_fees_per_share(fees);
+    }
+
     /// Claim accumulated rewards for a liquidity provider
     #[payable]
     pub fn claim_rewards(&mut self, pool_id: u32) -> PromiseOrValue<Vec<U128>> {
         assert_one_yocto();
 
-        let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
         let account_id = env::predecessor_account_id();
+        let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
+        let token_ids = pool.token_ids.clone();
 
         // Calculate pending rewards
         let pending_rewards = pool.calculate_pending_rewards(&account_id);
@@ -433,45 +449,85 @@ impl Contract {
         // TODO: update pool
 
         // Transfer rewards to the user
-        let mut promises = Vec::new();
-        for (i, reward) in pending_rewards.iter().enumerate() {
-            if *reward > 0 {
-                let token_id = &pool.token_ids[i];
-                promises.push(
-                    ext_ft::ext(token_id.clone())
+        let pool_account_id = self.get_pool_account_id(pool_id);
+        let transfer_promises = if pending_rewards[0] > 0 && pending_rewards[1] > 0 {
+            ext_intents_vault::ext(pool_account_id.clone())
+                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .ft_withdraw(
+                    self.intents_contract_id.clone(),
+                    token_ids[0].clone(),
+                    account_id.clone(),
+                    U128(pending_rewards[0]),
+                    None,
+                    None,
+                ).and(
+                    ext_intents_vault::ext(pool_account_id.clone())
                         .with_attached_deposit(NearToken::from_yoctonear(1))
-                        .ft_transfer(account_id.clone(), U128(*reward), None),
-                );
-            }
-        }
-
-        if promises.is_empty() {
-            PromiseOrValue::Value(pending_rewards.into_iter().map(|r| U128(r)).collect())
-        } else {
-            Promise::new(env::current_account_id())
-                .then(
-                    Self::ext(env::current_account_id())
-                        .with_static_gas(GAS_CLAIM_REWARDS_CALLBACK)
-                        .on_claim_rewards_complete(
-                            pending_rewards.into_iter().map(|r| U128(r)).collect(),
+                        .ft_withdraw(
+                            self.intents_contract_id.clone(),
+                            token_ids[1].clone(),
+                            account_id.clone(),
+                            U128(pending_rewards[1]),
+                            None,
+                            None,
                         ),
+            )
+        } else if pending_rewards[0] > 0 {
+            ext_intents_vault::ext(pool_account_id.clone())
+                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .ft_withdraw(
+                    self.intents_contract_id.clone(),
+                    token_ids[0].clone(),
+                    account_id.clone(),
+                    U128(pending_rewards[0]),
+                    None,
+                    None,
                 )
-                .into()
-        }
+        } else if pending_rewards[1] > 0 {
+            ext_intents_vault::ext(pool_account_id.clone())
+                        .with_attached_deposit(NearToken::from_yoctonear(1))
+                        .ft_withdraw(
+                            self.intents_contract_id.clone(),
+                            token_ids[1].clone(),
+                            account_id.clone(),
+                            U128(pending_rewards[1]),
+                            None,
+                            None,
+                        )
+        } else {
+            env::panic_str("No rewards to claim");
+        };
+
+        transfer_promises.then(Self::ext(env::current_account_id()).on_claim_rewards(
+                pool_id,
+                account_id.clone(),
+                pending_rewards.into_iter().map(|a| U128(a)).collect(),
+            ))
+            .into()
     }
 
     #[private]
-    pub fn on_claim_rewards_complete(&self, rewards: Vec<U128>) -> Vec<U128> {
-        // Event::ClaimRewards {
-        //     pool_id: &pool_id,
-        //     account_id: &account_id,
-        //     rewards: &pending_rewards.into_iter().map(|r| U128(r)).collect(),
-        // }
-        // .emit();
+    pub fn on_claim_rewards(
+        &self,
+        pool_id: u32,
+        account_id: AccountId,
+        rewards: Vec<U128>,
+        #[callback_vec] results: Vec<Result<U128, PromiseError>>,
+    ) -> Vec<U128> {
+        if results.iter().all(|x| x.is_ok()) {
+            Event::ClaimRewards {
+                pool_id: &pool_id,
+                account_id: &account_id,
+                rewards: &rewards,
+            }
+            .emit();
 
-        // TODO: claim rewards event
-
-        rewards
+            rewards
+        } else {
+            // TODO: rollback the claimed rewards
+            // The failed transfer should be kept in `lost_and_found` and can be withdrawn by the user
+            rewards
+        }
     }
 
     #[private]

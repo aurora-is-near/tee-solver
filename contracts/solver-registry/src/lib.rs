@@ -171,8 +171,9 @@ impl Contract {
         );
     }
 
-    // fn require_approved_codehash(&self) {
-    //     let worker = self.get_worker(env::predecessor_account_id());
-    //     self.assert_approved_codehash(&worker.codehash);
-    // }
+    pub(crate) fn require_approved_worker(&self) -> &Worker {
+        let worker = self.worker_by_account_id.get(&env::predecessor_account_id()).expect("Worker not found");
+        self.assert_approved_codehash(&worker.codehash);
+        worker
+    }
 }
