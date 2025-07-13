@@ -421,9 +421,9 @@ impl Contract {
     /// and can be claimed by the liquidity provider
     /// TODO: whether transfer fees to the liquidity pool contract when collecting fees?
     #[payable]
-    pub fn collect_liquidity_pool_fees(&mut self, pool_id: u32, fees: Vec<Balance>) {
+    pub fn collect_liquidity_pool_fees(&mut self, fees: Vec<Balance>) {
         let worker = self.require_approved_worker();
-        require!(worker.pool_id == pool_id, "Worker is not associated with this pool");
+        let pool_id = worker.pool_id;
 
         let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
         pool.update_fees_per_share(fees);
