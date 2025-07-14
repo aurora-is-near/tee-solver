@@ -32,6 +32,8 @@ pub struct Pool {
     pub shares: LookupMap<AccountId, Balance>,
     /// Total number of shares.
     pub shares_total_supply: Balance,
+    /// Unclaimed fees for each token
+    pub unclaimed_fees: Vec<Balance>,
     /// Accumulated fees per share for each token (for reward calculation)
     pub fees_per_share: Vec<Balance>,
     /// Last claimed fees per share for each liquidity provider
@@ -46,6 +48,8 @@ pub struct PoolInfo {
     pub amounts: Vec<U128>,
     /// Fee charged for swap in basis points
     pub fee: u32,
+    /// Unclaimed fees for each token
+    pub unclaimed_fees: Vec<U128>,
     /// Total number of shares.
     pub shares_total_supply: U128,
     /// Accumulated fees per share for each token
@@ -67,6 +71,7 @@ impl Pool {
             fee,
             shares: LookupMap::new(Prefix::PoolShares),
             shares_total_supply: 0,
+            unclaimed_fees: vec![0; token_ids.len()],
             fees_per_share: vec![0; token_ids.len()],
             last_claimed_fees: LookupMap::new(Prefix::LastClaimedFees),
         }
@@ -160,9 +165,10 @@ impl Pool {
     }
 
     /// Update fees per share (called after collecting fees)
-    pub fn update_fees_per_share(&mut self, collected_fees: Vec<Balance>) {
+    pub fn update_fees_in_pool(&mut self, collected_fees: Vec<Balance>) {
         if self.shares_total_supply > 0 {
             for (i, fee) in collected_fees.iter().enumerate() {
+                self.unclaimed_fees[i] += fee;
                 self.fees_per_share[i] += fee / self.shares_total_supply;
             }
         }
@@ -170,6 +176,10 @@ impl Pool {
 
     /// Mark fees as claimed for a liquidity provider
     pub fn mark_fees_claimed(&mut self, account_id: &AccountId) {
+        let pending_rewards = self.calculate_pending_rewards(account_id);
+        for (i, fee) in pending_rewards.iter().enumerate() {
+            self.unclaimed_fees[i] -= *fee;
+        }
         self.last_claimed_fees
             .insert(account_id.clone(), self.fees_per_share.clone());
     }
@@ -420,12 +430,12 @@ impl Contract {
     /// and can be claimed by the liquidity provider
     /// TODO: whether transfer fees to the liquidity pool contract when collecting fees?
     #[payable]
-    pub fn collect_liquidity_pool_fees(&mut self, fees: Vec<Balance>) {
+    pub fn collect_pool_fees(&mut self, fees: Vec<Balance>) {
         let worker = self.require_approved_worker();
         let pool_id = worker.pool_id;
 
         let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
-        pool.update_fees_per_share(fees);
+        pool.update_fees_in_pool(fees);
     }
 
     /// Claim accumulated rewards for a liquidity provider
@@ -439,8 +449,7 @@ impl Contract {
 
         // Calculate pending rewards
         let pending_rewards = pool.calculate_pending_rewards(&account_id);
-        let total_rewards: Balance = pending_rewards.iter().sum();
-        require!(total_rewards > 0, "No rewards to claim");
+        require!(pending_rewards[0] > 0 || pending_rewards[1] > 0, "No rewards to claim");
 
         // Mark fees as claimed
         pool.mark_fees_claimed(&account_id);

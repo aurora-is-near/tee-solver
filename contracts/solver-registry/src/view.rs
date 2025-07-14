@@ -16,6 +16,7 @@ impl Contract {
             token_ids: p.token_ids.clone(),
             amounts: p.amounts.iter().map(|a| (*a).into()).collect(),
             fee: p.fee,
+            unclaimed_fees: p.unclaimed_fees.iter().map(|f| (*f).into()).collect(),
             shares_total_supply: p.shares_total_supply.into(),
             fees_per_share: p.fees_per_share.iter().map(|f| (*f).into()).collect(),
         })
@@ -35,17 +36,6 @@ impl Contract {
             .skip(offset as usize)
             .take(limit as usize)
             .collect()
-    }
-
-    /// Get pool information
-    pub fn get_pool_info(&self, pool_id: u32) -> Option<PoolInfo> {
-        self.pools.get(pool_id).map(|pool| PoolInfo {
-            token_ids: pool.token_ids.clone(),
-            amounts: pool.amounts.iter().map(|&a| a.into()).collect(),
-            fee: pool.fee,
-            shares_total_supply: pool.shares_total_supply.into(),
-            fees_per_share: pool.fees_per_share.iter().map(|&f| f.into()).collect(),
-        })
     }
 
     /// Get liquidity provider shares for a specific pool
