@@ -40,6 +40,7 @@ dcap-qvl = { git = "https://github.com/mattlockyer/dcap-qvl" }
 hex = "0.4.3"
 serde_json = "1.0.140"
 sha2 = "0.10.8"
+derive_more = "0.99"
 
 [dev-dependencies]
 near-sdk = { version = "5.14.0", features = ["unit-testing"] }

@@ -490,6 +490,12 @@ checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
 name = "convert_case"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
+
+[[package]]
+name = "convert_case"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb4a24b1aaf0fd0ce8b45161144d6f42cd91677fd5940fd431183eb023b3a2b8"
@@ -699,6 +705,19 @@ checksum = "30542c1ad912e0e3d22a1935c290e12e8a29d704a420177a31faad4a601a0800"
 dependencies = [
  "proc-macro2",
  "quote",
+ "syn 2.0.101",
+]
+
+[[package]]
+name = "derive_more"
+version = "0.99.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6edb4b64a43d977b8e99788fe3a04d483834fba1215a7e02caa415b626497f7f"
+dependencies = [
+ "convert_case 0.4.0",
+ "proc-macro2",
+ "quote",
+ "rustc_version",
  "syn 2.0.101",
 ]
 
@@ -1716,7 +1735,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "879ac02b2e8d6498294adce1de7a2424a5474b35a73e9262c851be39c89d7f92"
 dependencies = [
  "anyhow",
- "convert_case",
+ "convert_case 0.5.0",
  "near-abi-client-impl",
  "near-abi-client-macros",
  "prettyplease 0.1.25",
@@ -1768,7 +1787,7 @@ dependencies = [
  "anyhow",
  "bytesize",
  "chrono",
- "derive_more",
+ "derive_more 1.0.0",
  "near-config-utils",
  "near-crypto",
  "near-parameters",
@@ -1814,7 +1833,7 @@ dependencies = [
  "borsh",
  "bs58 0.4.0",
  "curve25519-dalek",
- "derive_more",
+ "derive_more 1.0.0",
  "ed25519-dalek",
  "hex",
  "near-account-id",
@@ -1919,7 +1938,7 @@ dependencies = [
  "bytesize",
  "cfg-if 1.0.0",
  "chrono",
- "derive_more",
+ "derive_more 1.0.0",
  "easy-ext",
  "enum-map",
  "hex",
@@ -1957,7 +1976,7 @@ dependencies = [
  "base64 0.21.7",
  "borsh",
  "bs58 0.4.0",
- "derive_more",
+ "derive_more 1.0.0",
  "enum-map",
  "near-account-id",
  "near-schema-checker-lib",
@@ -2817,7 +2836,7 @@ checksum = "346a3b32eba2640d17a9cb5927056b08f3de90f65b72fe09402c2ad07d684d0b"
 dependencies = [
  "bitvec",
  "cfg-if 1.0.0",
- "derive_more",
+ "derive_more 1.0.0",
  "parity-scale-codec",
  "scale-info-derive",
 ]
@@ -3145,6 +3164,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "dcap-qvl",
+ "derive_more 0.99.20",
  "hex",
  "near-contract-standards",
  "near-gas",

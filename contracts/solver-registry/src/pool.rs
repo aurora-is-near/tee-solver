@@ -4,7 +4,6 @@ use near_sdk::{
     assert_one_yocto, env, near, require, AccountId, Gas, NearToken, Promise, PromiseError,
     PromiseOrValue,
 };
-use sha2::digest::consts::U12;
 
 use crate::events::Event;
 use crate::ext::ext_ft;
@@ -198,7 +197,7 @@ impl Pool {
             return 0;
         }
         let mut x = value;
-        let mut y = (x + 1) / 2;
+        let mut y = x.div_ceil(2);
         while y < x {
             x = y;
             y = (x + value / x) / 2;
@@ -325,7 +324,7 @@ impl Contract {
             Event::AddLiquidity {
                 pool_id: &pool_id,
                 account_id: &account_id,
-                amounts: &amounts.into_iter().map(|a| a.into()).collect(),
+                amounts: &amounts.into_iter().collect(),
                 shares_minted: &shares_to_mint,
             }
             .emit();
@@ -383,7 +382,7 @@ impl Contract {
             .then(Self::ext(env::current_account_id()).on_remove_liquidity(
                 pool_id,
                 account_id.clone(),
-                amounts_to_return.into_iter().map(|a| U128(a)).collect(),
+                amounts_to_return.into_iter().map(U128).collect(),
                 U128(shares_to_burn),
             ))
             .into()
@@ -460,7 +459,8 @@ impl Contract {
                     U128(pending_rewards[0]),
                     None,
                     None,
-                ).and(
+                )
+                .and(
                     ext_intents_vault::ext(pool_account_id.clone())
                         .with_attached_deposit(NearToken::from_yoctonear(1))
                         .ft_withdraw(
@@ -471,7 +471,7 @@ impl Contract {
                             None,
                             None,
                         ),
-            )
+                )
         } else if pending_rewards[0] > 0 {
             ext_intents_vault::ext(pool_account_id.clone())
                 .with_attached_deposit(NearToken::from_yoctonear(1))
@@ -485,23 +485,24 @@ impl Contract {
                 )
         } else if pending_rewards[1] > 0 {
             ext_intents_vault::ext(pool_account_id.clone())
-                        .with_attached_deposit(NearToken::from_yoctonear(1))
-                        .ft_withdraw(
-                            self.intents_contract_id.clone(),
-                            token_ids[1].clone(),
-                            account_id.clone(),
-                            U128(pending_rewards[1]),
-                            None,
-                            None,
-                        )
+                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .ft_withdraw(
+                    self.intents_contract_id.clone(),
+                    token_ids[1].clone(),
+                    account_id.clone(),
+                    U128(pending_rewards[1]),
+                    None,
+                    None,
+                )
         } else {
             env::panic_str("No rewards to claim");
         };
 
-        transfer_promises.then(Self::ext(env::current_account_id()).on_claim_rewards(
+        transfer_promises
+            .then(Self::ext(env::current_account_id()).on_claim_rewards(
                 pool_id,
                 account_id.clone(),
-                pending_rewards.into_iter().map(|a| U128(a)).collect(),
+                pending_rewards.into_iter().map(U128).collect(),
             ))
             .into()
     }
@@ -557,13 +558,17 @@ impl Contract {
         self.pools.get(pool_id).is_some()
     }
 
+    pub(crate) fn internal_get_pool(&self, pool_id: u32) -> &Pool {
+        self.pools.get(pool_id).expect(ERR_POOL_NOT_FOUND)
+    }
+
     pub(crate) fn deposit_into_pool(
         &self,
         pool_id: u32,
         token_id: &AccountId,
         amount: Balance,
     ) -> PromiseOrValue<U128> {
-        let pool = self.pools.get(pool_id).expect(ERR_POOL_NOT_FOUND);
+        let pool = self.internal_get_pool(pool_id);
 
         require!(pool.token_ids.contains(token_id), ERR_BAD_TOKEN_ID);
         require!(amount > 0, ERR_INVALID_AMOUNT);
@@ -589,11 +594,7 @@ impl Contract {
         account_id: &AccountId,
         amounts: &[Balance],
     ) -> Vec<AccountId> {
-        let token_ids = self
-            .pools
-            .get(pool_id)
-            .expect(ERR_POOL_NOT_FOUND)
-            .get_token_ids();
+        let token_ids = self.internal_get_pool(pool_id).get_token_ids();
 
         for (i, token_id) in token_ids.iter().enumerate() {
             let amount = amounts[i];

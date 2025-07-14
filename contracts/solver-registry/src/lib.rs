@@ -20,6 +20,7 @@ mod admin;
 mod collateral;
 mod events;
 mod ext;
+mod nep245;
 mod pool;
 mod token_receiver;
 mod types;
@@ -172,7 +173,10 @@ impl Contract {
     }
 
     pub(crate) fn require_approved_worker(&self) -> &Worker {
-        let worker = self.worker_by_account_id.get(&env::predecessor_account_id()).expect("Worker not found");
+        let worker = self
+            .worker_by_account_id
+            .get(&env::predecessor_account_id())
+            .expect("Worker not found");
         self.assert_approved_codehash(&worker.codehash);
         worker
     }

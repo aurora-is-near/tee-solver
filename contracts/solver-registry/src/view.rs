@@ -62,7 +62,7 @@ impl Contract {
         if let Some(pool) = self.pools.get(pool_id) {
             pool.calculate_pending_rewards(&account_id)
                 .into_iter()
-                .map(|r| U128(r))
+                .map(U128)
                 .collect()
         } else {
             vec![U128(0), U128(0)]
