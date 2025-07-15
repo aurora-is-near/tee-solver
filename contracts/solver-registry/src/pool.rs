@@ -7,6 +7,7 @@ use near_sdk::{
 
 use crate::events::Event;
 use crate::ext::ext_ft;
+use crate::nep245::ext_mt_core;
 use crate::*;
 
 const CREATE_POOL_STORAGE_DEPOSIT: NearToken =
@@ -14,6 +15,7 @@ const CREATE_POOL_STORAGE_DEPOSIT: NearToken =
 const GAS_CREATE_POOL_CALLBACK: Gas = Gas::from_tgas(10);
 const GAS_REMOVE_LIQUIDITY_CALLBACK: Gas = Gas::from_tgas(10);
 const GAS_CLAIM_REWARDS_CALLBACK: Gas = Gas::from_tgas(10);
+const GAS_SYNC_BALANCES_FROM_INTENTS: Gas = Gas::from_tgas(5);
 
 const ERR_POOL_NOT_FOUND: &str = "Pool not found";
 const ERR_BAD_TOKEN_ID: &str = "Token doesn't exist in pool";
@@ -286,6 +288,32 @@ impl Contract {
 
         let account_id = env::predecessor_account_id();
 
+        self.sync_balances_from_intents(pool_id)
+            .then(Self::ext(env::current_account_id()).on_add_liquidity_start(
+                account_id,
+                pool_id,
+                amounts.iter().map(|x| U128(*x)).collect(),
+            ))
+            .into()
+    }
+
+    /// Start adding liquidity to a pool
+    /// This function is called after syncing balances from NEAR Intents
+    /// It withdraws funds from account deposits and adds liquidity to the pool
+    /// It returns the number of shares minted
+    #[private]
+    pub fn on_add_liquidity_start(
+        &mut self,
+        account_id: AccountId,
+        pool_id: u32,
+        amounts: Vec<U128>,
+        #[callback_result] call_result: Result<Vec<U128>, PromiseError>,
+    ) -> PromiseOrValue<U128> {
+        if call_result.is_err() {
+            env::panic_str("Failed to sync balances from NEAR Intents");
+        }
+        let amounts: Vec<Balance> = amounts.into_iter().map(|a| a.0).collect();
+
         // Withdraw funds from accounts first
         let token_ids = self.withdraw_from_accounts(pool_id, &account_id, &amounts);
 
@@ -312,7 +340,7 @@ impl Contract {
                         self.get_pool_account_id(pool_id).to_string(),
                     ),
             )
-            .then(Self::ext(env::current_account_id()).on_add_liquidity(
+            .then(Self::ext(env::current_account_id()).on_add_liquidity_end(
                 pool_id,
                 amounts.iter().map(|x| U128(*x)).collect(),
                 account_id,
@@ -322,7 +350,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn on_add_liquidity(
+    pub fn on_add_liquidity_end(
         &self,
         pool_id: u32,
         amounts: Vec<U128>,
@@ -357,8 +385,24 @@ impl Contract {
         require!(shares_to_burn > 0, "Shares must be greater than 0");
 
         let account_id = env::predecessor_account_id();
+        self.sync_balances_from_intents(pool_id)
+            .then(
+                Self::ext(env::current_account_id())
+                    .on_remove_liquidity_start(account_id, pool_id, shares),
+            )
+            .into()
+    }
+
+    #[private]
+    pub fn on_remove_liquidity_start(
+        &mut self,
+        account_id: AccountId,
+        pool_id: u32,
+        shares: U128,
+    ) -> PromiseOrValue<Vec<U128>> {
         let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
         let token_ids = pool.token_ids.clone();
+        let shares_to_burn = shares.0;
 
         // Remove liquidity and get amounts to return
         let amounts_to_return = pool.remove_liquidity(&account_id, shares_to_burn);
@@ -389,17 +433,19 @@ impl Contract {
                         None,
                     ),
             )
-            .then(Self::ext(env::current_account_id()).on_remove_liquidity(
-                pool_id,
-                account_id.clone(),
-                amounts_to_return.into_iter().map(U128).collect(),
-                U128(shares_to_burn),
-            ))
+            .then(
+                Self::ext(env::current_account_id()).on_remove_liquidity_end(
+                    pool_id,
+                    account_id.clone(),
+                    amounts_to_return.into_iter().map(U128).collect(),
+                    U128(shares_to_burn),
+                ),
+            )
             .into()
     }
 
     #[private]
-    pub fn on_remove_liquidity(
+    pub fn on_remove_liquidity_end(
         &self,
         pool_id: u32,
         account_id: AccountId,
@@ -449,7 +495,10 @@ impl Contract {
 
         // Calculate pending rewards
         let pending_rewards = pool.calculate_pending_rewards(&account_id);
-        require!(pending_rewards[0] > 0 || pending_rewards[1] > 0, "No rewards to claim");
+        require!(
+            pending_rewards[0] > 0 || pending_rewards[1] > 0,
+            "No rewards to claim"
+        );
 
         // Mark fees as claimed
         pool.mark_fees_claimed(&account_id);
@@ -538,6 +587,38 @@ impl Contract {
             // The failed transfer should be kept in `lost_and_found` and can be withdrawn by the user
             rewards
         }
+    }
+
+    /// Sync balances from NEAR Intents
+    pub fn sync_balances_from_intents(&self, pool_id: u32) -> Promise {
+        let pool = self.internal_get_pool(pool_id);
+        let token_ids = pool
+            .token_ids
+            .iter()
+            .map(|id| format!("nep141:{}", id))
+            .collect();
+
+        ext_mt_core::ext(self.intents_contract_id.clone())
+            .with_static_gas(GAS_SYNC_BALANCES_FROM_INTENTS)
+            .mt_batch_balance_of(self.get_pool_account_id(pool_id).clone(), token_ids)
+            .then(Self::ext(env::current_account_id()).on_sync_balances_from_intents(pool_id))
+    }
+
+    #[private]
+    pub fn on_sync_balances_from_intents(
+        &mut self,
+        pool_id: u32,
+        #[callback_result] call_result: Result<Vec<U128>, PromiseError>,
+    ) {
+        if call_result.is_err() {
+            env::panic_str("Failed to sync balances from NEAR Intents");
+        }
+        let balances = call_result.unwrap();
+        let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
+        for (i, balance) in balances.iter().enumerate() {
+            pool.amounts[i] = balance.0.saturating_sub(pool.unclaimed_fees[i]);
+        }
+        self.pools.flush();
     }
 
     #[private]

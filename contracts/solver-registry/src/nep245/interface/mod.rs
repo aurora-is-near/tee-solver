@@ -1,9 +1,9 @@
-mod core;
+pub mod core;
 pub mod enumeration;
 pub mod events;
 pub mod receiver;
 pub mod resolver;
-mod token;
+pub mod token;
 
 use near_sdk::{json_types::U128, AccountId};
 
