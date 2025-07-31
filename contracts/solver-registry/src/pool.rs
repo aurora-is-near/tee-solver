@@ -436,7 +436,7 @@ impl Contract {
         self.pools.flush();
 
         // TODO: ft_withdraw with static gas
-        // TODO: handle cases when user is not a NEAR account
+        // TODO: handle cases when user is not a NEAR account, using `mt_withdraw` function
         let pool_account_id = self.get_pool_account_id(pool_id);
         ext_intents_vault::ext(pool_account_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
@@ -499,9 +499,7 @@ impl Contract {
 
     /// Collect fees for a liquidity pool
     /// This function is called when a worker swaps tokens
-    /// The fees are recorded to the liquidity pool contract
-    /// and can be claimed by the liquidity provider
-    /// TODO: whether transfer fees to the liquidity pool contract when collecting fees?
+    /// The fees are recorded to the liquidity pool contract and can be claimed by the liquidity provider
     #[payable]
     pub fn collect_pool_fees(&mut self, fees: Vec<Balance>) {
         let worker = self.require_approved_worker();
@@ -606,7 +604,7 @@ impl Contract {
             rewards
         } else {
             // TODO: rollback the claimed rewards
-            // The failed transfer should be kept in `lost_and_found` and can be withdrawn by the user
+            // The failed transfer should be kept in `withdrawable_fees` or `lost_and_found` and can be withdrawn by the user later
             rewards
         }
     }

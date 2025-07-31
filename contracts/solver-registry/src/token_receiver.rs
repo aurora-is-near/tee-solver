@@ -37,4 +37,7 @@ impl Contract {
             }
         }
     }
+
+    // TOOD: support deposits via NEP-245 multi-token
+    // pub fn mt_on_transfer
 }
