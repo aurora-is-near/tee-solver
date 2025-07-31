@@ -39,7 +39,9 @@ pub struct Pool {
     /// Accumulated fees per share for each token (for reward calculation)
     pub fees_per_share: Vec<Balance>,
     /// Last claimed fees per share for each liquidity provider
-    pub last_claimed_fees: LookupMap<AccountId, Vec<Balance>>,
+    pub lp_claimed_fees_per_share: LookupMap<AccountId, Vec<Balance>>,
+    /// Fees claimed but not withdrawn for each liquidity provider
+    pub lp_withdrawable_fees: LookupMap<AccountId, Vec<Balance>>,
 }
 
 #[near(serializers = [json])]
@@ -75,7 +77,7 @@ impl Pool {
             shares_total_supply: 0,
             unclaimed_fees: vec![0; token_ids.len()],
             fees_per_share: vec![0; token_ids.len()],
-            last_claimed_fees: LookupMap::new(Prefix::LastClaimedFees),
+            lp_claimed_fees_per_share: LookupMap::new(Prefix::LastClaimedFees),
         }
     }
 
@@ -90,6 +92,9 @@ impl Pool {
             amounts[0] > 0 && amounts[1] > 0,
             "Amounts must be greater than 0"
         );
+
+        // Claim fees before adding liquidity
+        self.claim_fees(account_id);
 
         // Calculate shares to mint
         let shares_to_mint = self.calculate_shares(&amounts);
@@ -116,6 +121,9 @@ impl Pool {
         shares_to_burn: Balance,
     ) -> Vec<Balance> {
         require!(shares_to_burn > 0, "Shares must be greater than 0");
+
+        // Claim fees before removing liquidity
+        self.claim_fees(account_id);
 
         let current_shares = self.shares.get(account_id).unwrap_or(&0u128);
         require!(current_shares >= &shares_to_burn, ERR_INSUFFICIENT_SHARES);
@@ -151,7 +159,7 @@ impl Pool {
             return vec![0; self.token_ids.len()];
         }
 
-        let last_claimed = self.last_claimed_fees.get(account_id);
+        let last_claimed = self.lp_claimed_fees_per_share.get(account_id);
         let mut pending_rewards = Vec::new();
 
         for (i, fees_per_share) in self.fees_per_share.iter().enumerate() {
@@ -177,13 +185,23 @@ impl Pool {
     }
 
     /// Mark fees as claimed for a liquidity provider
-    pub fn mark_fees_claimed(&mut self, account_id: &AccountId) {
+    pub fn claim_fees(&mut self, account_id: &AccountId) {
         let pending_rewards = self.calculate_pending_rewards(account_id);
         for (i, fee) in pending_rewards.iter().enumerate() {
             self.unclaimed_fees[i] -= *fee;
         }
-        self.last_claimed_fees
+        self.lp_claimed_fees_per_share
             .insert(account_id.clone(), self.fees_per_share.clone());
+        for (i, fee) in pending_rewards.iter().enumerate() {
+            let withdrawable_fees = self.lp_withdrawable_fees.get(account_id).unwrap_or(&0u128);
+            self.lp_withdrawable_fees
+                .insert(account_id.clone(), withdrawable_fees + *fee);
+        }
+    }
+
+    /// Withdraw fees for a liquidity provider
+    pub fn withdraw_fees(&mut self, account_id: &AccountId) -> Vec<Balance> {
+        self.lp_withdrawable_fees.remove(account_id)
     }
 
     /// Calculate shares to mint based on deposited amounts
@@ -493,28 +511,23 @@ impl Contract {
         let pool = self.pools.get_mut(pool_id).expect(ERR_POOL_NOT_FOUND);
         let token_ids = pool.token_ids.clone();
 
-        // Calculate pending rewards
-        let pending_rewards = pool.calculate_pending_rewards(&account_id);
-        require!(
-            pending_rewards[0] > 0 || pending_rewards[1] > 0,
-            "No rewards to claim"
-        );
+        // Claim fees
+        pool.claim_fees(&account_id);
 
-        // Mark fees as claimed
-        pool.mark_fees_claimed(&account_id);
-        // self.pools.flush();
-        // TODO: update pool
+        // Withdraw fees
+        let rewards = pool.withdraw_fees(&account_id);
+        require!(rewards[0] > 0 || rewards[1] > 0, "No rewards to claim");
 
         // Transfer rewards to the user
         let pool_account_id = self.get_pool_account_id(pool_id);
-        let transfer_promises = if pending_rewards[0] > 0 && pending_rewards[1] > 0 {
+        let transfer_promises = if rewards[0] > 0 && rewards[1] > 0 {
             ext_intents_vault::ext(pool_account_id.clone())
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .ft_withdraw(
                     self.intents_contract_id.clone(),
                     token_ids[0].clone(),
                     account_id.clone(),
-                    U128(pending_rewards[0]),
+                    U128(rewards[0]),
                     None,
                     None,
                 )
@@ -525,30 +538,30 @@ impl Contract {
                             self.intents_contract_id.clone(),
                             token_ids[1].clone(),
                             account_id.clone(),
-                            U128(pending_rewards[1]),
+                            U128(rewards[1]),
                             None,
                             None,
                         ),
                 )
-        } else if pending_rewards[0] > 0 {
+        } else if rewards[0] > 0 {
             ext_intents_vault::ext(pool_account_id.clone())
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .ft_withdraw(
                     self.intents_contract_id.clone(),
                     token_ids[0].clone(),
                     account_id.clone(),
-                    U128(pending_rewards[0]),
+                    U128(rewards[0]),
                     None,
                     None,
                 )
-        } else if pending_rewards[1] > 0 {
+        } else if rewards[1] > 0 {
             ext_intents_vault::ext(pool_account_id.clone())
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .ft_withdraw(
                     self.intents_contract_id.clone(),
                     token_ids[1].clone(),
                     account_id.clone(),
-                    U128(pending_rewards[1]),
+                    U128(rewards[1]),
                     None,
                     None,
                 )
@@ -560,7 +573,7 @@ impl Contract {
             .then(Self::ext(env::current_account_id()).on_claim_rewards(
                 pool_id,
                 account_id.clone(),
-                pending_rewards.into_iter().map(U128).collect(),
+                rewards.into_iter().map(U128).collect(),
             ))
             .into()
     }
