@@ -77,7 +77,8 @@ impl Pool {
             shares_total_supply: 0,
             unclaimed_fees: vec![0; token_ids.len()],
             fees_per_share: vec![0; token_ids.len()],
-            lp_claimed_fees_per_share: LookupMap::new(Prefix::LastClaimedFees),
+            lp_claimed_fees_per_share: LookupMap::new(Prefix::LpClaimedFeesPerShares),
+            lp_withdrawable_fees: LookupMap::new(Prefix::LpWithdrawableFees),
         }
     }
 
@@ -192,16 +193,24 @@ impl Pool {
         }
         self.lp_claimed_fees_per_share
             .insert(account_id.clone(), self.fees_per_share.clone());
+
+        // Get or create withdrawable fees vector
+        // Use entry API to get or insert the withdrawable fees vector
+        let withdrawable_fees = self
+            .lp_withdrawable_fees
+            .entry(account_id.clone())
+            .or_insert_with(|| vec![0; self.token_ids.len()]);
+
         for (i, fee) in pending_rewards.iter().enumerate() {
-            let withdrawable_fees = self.lp_withdrawable_fees.get(account_id).unwrap_or(&0u128);
-            self.lp_withdrawable_fees
-                .insert(account_id.clone(), withdrawable_fees + *fee);
+            withdrawable_fees[i] += *fee;
         }
     }
 
     /// Withdraw fees for a liquidity provider
     pub fn withdraw_fees(&mut self, account_id: &AccountId) -> Vec<Balance> {
-        self.lp_withdrawable_fees.remove(account_id)
+        self.lp_withdrawable_fees
+            .remove(account_id)
+            .expect("No fees to withdraw")
     }
 
     /// Calculate shares to mint based on deposited amounts
