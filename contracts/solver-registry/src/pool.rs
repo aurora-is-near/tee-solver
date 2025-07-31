@@ -383,9 +383,10 @@ impl Contract {
         amounts: Vec<U128>,
         account_id: AccountId,
         shares_to_mint: U128,
-        #[callback_vec] used_fund: Vec<Result<U128, PromiseError>>,
+        #[callback_result] transfer_result_1: Result<U128, PromiseError>,
+        #[callback_result] transfer_result_2: Result<U128, PromiseError>,
     ) -> U128 {
-        if used_fund.iter().all(|x| x.is_ok()) {
+        if transfer_result_1.is_ok() && transfer_result_2.is_ok() {
             Event::AddLiquidity {
                 pool_id: &pool_id,
                 account_id: &account_id,
@@ -478,9 +479,10 @@ impl Contract {
         account_id: AccountId,
         amounts: Vec<U128>,
         shares: U128,
-        #[callback_vec] results: Vec<Result<U128, PromiseError>>,
+        #[callback_result] withdraw_result_1: Result<U128, PromiseError>,
+        #[callback_result] withdraw_result_2: Result<U128, PromiseError>,
     ) -> Vec<U128> {
-        if results.iter().all(|x| x.is_ok()) {
+        if withdraw_result_1.is_ok() && withdraw_result_2.is_ok() {
             Event::RemoveLiquidity {
                 pool_id: &pool_id,
                 account_id: &account_id,
@@ -591,9 +593,10 @@ impl Contract {
         pool_id: u32,
         account_id: AccountId,
         rewards: Vec<U128>,
-        #[callback_vec] results: Vec<Result<U128, PromiseError>>,
+        #[callback_result] withdraw_result_1: Result<U128, PromiseError>,
+        #[callback_result] withdraw_result_2: Result<U128, PromiseError>,
     ) -> Vec<U128> {
-        if results.iter().all(|x| x.is_ok()) {
+        if withdraw_result_1.is_ok() && withdraw_result_2.is_ok() {
             Event::ClaimRewards {
                 pool_id: &pool_id,
                 account_id: &account_id,

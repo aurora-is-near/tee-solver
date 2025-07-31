@@ -5,7 +5,6 @@ use serde_json::json;
 mod constants;
 mod utils;
 
-use constants::*;
 use utils::*;
 
 #[tokio::test]
@@ -58,7 +57,8 @@ async fn test_create_liquidity_pool() -> Result<(), Box<dyn std::error::Error>> 
         .await?;
 
     let pool: PoolInfo = serde_json::from_slice(&pool_info.result).unwrap();
-    assert_eq!(pool.token_ids, vec![wnear.id(), usdc.id()]);
+
+    assert_eq!(pool.token_ids, vec![wnear.id().clone(), usdc.id().clone()]);
     assert_eq!(pool.fee, 300);
     assert_eq!(pool.shares_total_supply.0, 0);
     assert_eq!(pool.amounts.len(), 2);
