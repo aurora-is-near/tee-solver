@@ -26,16 +26,11 @@ pub enum Event<'a> {
         token_ids: &'a Vec<AccountId>,
         fee: &'a u32,
     },
-    // AddLiquidity {
-    //     pool_id: &'a u32,
-    //     account_id: &'a AccountId,
-    //     amounts: &'a Vec<U128>,
-    // },
-    // RemoveLiquidity {
-    //     pool_id: &'a u32,
-    //     account_id: &'a AccountId,
-    //     amounts: &'a Vec<U128>,
-    // },
+    WorkerPinged {
+        pool_id: &'a u32,
+        worker_id: &'a AccountId,
+        timestamp_ms: &'a u64,
+    },
 }
 
 impl Event<'_> {

@@ -27,6 +27,10 @@ pub struct Pool {
     pub shares: LookupMap<AccountId, Balance>,
     /// Total number of shares.
     pub shares_total_supply: Balance,
+    /// Worker account ID. Only one worker is allowed per pool.
+    pub worker_id: Option<AccountId>,
+    /// Last ping timestamp by the pool's worker.
+    pub last_ping_timestamp_ms: u64,
 }
 
 #[near(serializers = [json])]
@@ -39,6 +43,10 @@ pub struct PoolInfo {
     pub fee: u32,
     /// Total number of shares.
     pub shares_total_supply: U128,
+    /// Worker account ID. Only one worker is allowed per pool.
+    pub worker_id: Option<AccountId>,
+    /// Last ping timestamp by the pool's worker.
+    pub last_ping_timestamp_ms: u64,
 }
 
 impl Pool {
@@ -56,6 +64,8 @@ impl Pool {
             fee,
             shares: LookupMap::new(Prefix::PoolShares),
             shares_total_supply: 0,
+            worker_id: None,
+            last_ping_timestamp_ms: 0,
         }
     }
 }
@@ -132,32 +142,6 @@ impl Contract {
             amount
         }
     }
-
-    // `add_liquidity` and `remove_liquidity` are not needed for now
-    // #[payable]
-    // pub fn add_liquidity(
-    //     &mut self,
-    //     pool_id: u32,
-    //     token_ids: Vec<AccountId>,
-    //     amounts: Vec<Balance>,
-    // ) {
-    //     require!(token_ids.len() == 2, "Must have exactly 2 tokens");
-    //     require!(amounts.len() == 2, "Must have exactly 2 amounts");
-    //     require!(amounts[0] > 0, "Amount must be greater than 0");
-    //     require!(amounts[1] > 0, "Amount must be greater than 0");
-
-    //     let pool = self.pools.get(pool_id).expect("Pool not found");
-    //     let shares_total_supply = pool.shares_total_supply;
-    // }
-
-    // #[payable]
-    // pub fn remove_liquidity(&mut self, pool_id: u32, shares: U128) {
-    //     let shares = shares.0;
-    //     require!(shares > 0, "Shares must be greater than 0");
-
-    //     let pool = self.pools.get(pool_id).expect("Pool not found");
-    //     // pool.shares_total_supply -= shares;
-    // }
 }
 
 impl Contract {

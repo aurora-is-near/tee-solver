@@ -2,7 +2,7 @@ use dcap_qvl::{verify, QuoteCollateralV3};
 use hex::{decode, encode};
 use near_sdk::{
     assert_one_yocto,
-    env::{self, block_timestamp},
+    env::{self, block_timestamp, block_timestamp_ms},
     ext_contract, log, near, require,
     store::{IterableMap, IterableSet, Vector},
     AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseError, PublicKey,
@@ -22,6 +22,7 @@ mod types;
 mod upgrade;
 mod view;
 
+const WORKER_PING_TIMEOUT_MS: u64 = 10 * 60 * 1000; // 10 minutes
 const GAS_REGISTER_WORKER_CALLBACK: Gas = Gas::from_tgas(10);
 
 #[near(serializers = [json, borsh])]
@@ -73,6 +74,9 @@ impl Contract {
     ) -> Promise {
         assert_one_yocto();
         require!(self.has_pool(pool_id), "Pool not found");
+        require!(!self.has_active_worker(pool_id), "Only one active worker is allowed per pool");
+        let pool = self.pools.get(pool_id).expect("Pool not found");
+        require!(pool.worker_id.is_none() || pool.worker_id.as_ref().unwrap() != &env::predecessor_account_id(), "Worker already registered");
 
         let collateral = collateral::get_collateral(collateral);
         let quote = decode(quote_hex).unwrap();
@@ -136,6 +140,12 @@ impl Contract {
                 },
             );
 
+            // Update the pool with the worker ID and last ping timestamp
+            let pool = self.pools.get_mut(pool_id).expect("Pool not found");
+            pool.worker_id = Some(worker_id.clone());
+            pool.last_ping_timestamp_ms = block_timestamp_ms();
+            self.pools.flush();
+
             Event::WorkerRegistered {
                 worker_id: &worker_id,
                 pool_id: &pool_id,
@@ -145,6 +155,26 @@ impl Contract {
             }
             .emit();
         }
+    }
+
+    /// Heartbeat to notify the pool that the worker is still alive.
+    pub fn ping(&mut self) {
+        let worker_id = env::predecessor_account_id();
+        let worker = self.get_worker(worker_id.clone()).expect("Worker not found");
+        self.assert_approved_codehash(&worker.codehash);
+        let pool = self.pools.get_mut(worker.pool_id).expect("Pool not found");
+        let registered_worker_id = pool.worker_id.as_ref().expect("Worker not registered");
+        require!(registered_worker_id == &worker_id, "Only the registered worker can ping");
+
+        pool.last_ping_timestamp_ms = block_timestamp_ms();
+        self.pools.flush();
+
+        Event::WorkerPinged {
+            pool_id: &worker.pool_id,
+            worker_id: &worker_id,
+            timestamp_ms: &block_timestamp_ms(),
+        }
+        .emit();
     }
 }
 
@@ -156,8 +186,9 @@ impl Contract {
         );
     }
 
-    // fn require_approved_codehash(&self) {
-    //     let worker = self.get_worker(env::predecessor_account_id());
-    //     self.assert_approved_codehash(&worker.codehash);
-    // }
+    /// Assume the worker is active if there's a ping within the timeout period.
+    fn has_active_worker(&self, pool_id: u32) -> bool {
+        let pool = self.pools.get(pool_id).expect("Pool not found");
+        block_timestamp_ms() < pool.last_ping_timestamp_ms + WORKER_PING_TIMEOUT_MS
+    }
 }

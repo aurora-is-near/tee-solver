@@ -17,6 +17,8 @@ impl Contract {
             amounts: p.amounts.iter().map(|a| (*a).into()).collect(),
             fee: p.fee,
             shares_total_supply: p.shares_total_supply.into(),
+            worker_id: p.worker_id.clone(),
+            last_ping_timestamp_ms: p.last_ping_timestamp_ms,
         })
     }
 
