@@ -76,8 +76,14 @@ impl Contract {
         let pool = self.pools.get(pool_id).expect("Pool not found");
         let worker_id = env::predecessor_account_id();
         // register new worker is allowed only if there's no active worker and the worker is not already registered
-        require!(!self.has_active_worker(&pool), "Only one active worker is allowed per pool");
-        require!(pool.worker_id.is_none() || pool.worker_id.as_ref().unwrap() != &worker_id, "Worker already registered");
+        require!(
+            !self.has_active_worker(&pool),
+            "Only one active worker is allowed per pool"
+        );
+        require!(
+            pool.worker_id.is_none() || pool.worker_id.as_ref().unwrap() != &worker_id,
+            "Worker already registered"
+        );
 
         let collateral = collateral::get_collateral(collateral);
         let quote = decode(quote_hex).unwrap();
@@ -155,11 +161,16 @@ impl Contract {
     /// Heartbeat to notify the pool that the worker is still alive.
     pub fn ping(&mut self) {
         let worker_id = env::predecessor_account_id();
-        let worker = self.get_worker(worker_id.clone()).expect("Worker not found");
+        let worker = self
+            .get_worker(worker_id.clone())
+            .expect("Worker not found");
         self.assert_approved_codehash(&worker.codehash);
         let pool = self.pools.get_mut(worker.pool_id).expect("Pool not found");
         let registered_worker_id = pool.worker_id.as_ref().expect("Worker not registered");
-        require!(registered_worker_id == &worker_id, "Only the registered worker can ping");
+        require!(
+            registered_worker_id == &worker_id,
+            "Only the registered worker can ping"
+        );
 
         pool.last_ping_timestamp_ms = block_timestamp_ms();
         self.pools.flush();
