@@ -12,7 +12,7 @@ const SOLVER_PORT = 3000;
 
 export class PhalaCloudService {
   async setupPhalaAuth(): Promise<void> {
-    const config = await getConfig();
+    const config = getConfig();
     
     const localApiKey = await getApiKey();
     if (!localApiKey) {
@@ -37,7 +37,7 @@ export class PhalaCloudService {
       throw new Error('Invalid fee value. Expected fee in basis points (e.g., 500 for 5%).');
     }
 
-    const config = await getConfig();
+    const config = getConfig();
 
     // const composePath = join(process.cwd(), `docker-compose.yaml`);
     const envPath = join(process.cwd(), `.env.phala`);

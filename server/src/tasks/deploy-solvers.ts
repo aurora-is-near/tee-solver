@@ -21,8 +21,14 @@ export async function deploySolvers() {
   for (const poolId of poolsWithoutCvms) {
     try {
       const pool = await solverRegistry.getPool(poolId);
-      logger.info(`Deploying solver for pool ${poolId}`, pool, pool);
-      // TODO: make sure the pool already has fund in NEAR Intents before deploy solver CVM
+      logger.info(`Deploying solver for pool ${poolId}: ${JSON.stringify(pool, null, 2)}`);
+
+      // If the pool doesn't have enough balances in NEAR Intents, skip deploying solver CVM
+      if (!await solverRegistry.hasEnoughBalancesInPool(poolId)) {
+        logger.info(`Pool ${poolId} does not have enough balances, skipping`);
+        continue;
+      }
+
       await phala.createSolverCvm(poolId, pool.token_ids, pool.fee);
       setTimeout(fundSolvers, 60 * 1000);
     } catch (e) {
@@ -38,7 +44,7 @@ export async function deploySolvers() {
 export async function fundSolvers() {
   logger.info('---- Funding Solvers ---');
 
-  const config = await getConfig();
+  const config = getConfig();
   const phala = new PhalaCloudService();
   const solverRegistry = new SolverRegistry();
   
