@@ -73,9 +73,11 @@ impl Contract {
         tcb_info: String,
     ) -> Promise {
         assert_one_yocto();
-        require!(!self.has_active_worker(pool_id), "Only one active worker is allowed per pool");
         let pool = self.pools.get(pool_id).expect("Pool not found");
-        require!(pool.worker_id.is_none() || pool.worker_id.as_ref().unwrap() != &env::predecessor_account_id(), "Worker already registered");
+        let worker_id = env::predecessor_account_id();
+        // register new worker is allowed only if there's no active worker and the worker is not already registered
+        require!(!self.has_active_worker(&pool), "Only one active worker is allowed per pool");
+        require!(pool.worker_id.is_none() || pool.worker_id.as_ref().unwrap() != &worker_id, "Worker already registered");
 
         let collateral = collateral::get_collateral(collateral);
         let quote = decode(quote_hex).unwrap();
@@ -101,8 +103,6 @@ impl Contract {
         // only allow workers with approved code hashes to register
         let codehash = collateral::verify_codehash(tcb_info, rtmr3);
         self.assert_approved_codehash(&codehash);
-
-        let worker_id = env::predecessor_account_id();
 
         // add the public key to the intents vault
         ext_intents_vault::ext(self.get_pool_account_id(pool_id))
@@ -182,8 +182,7 @@ impl Contract {
     }
 
     /// Assume the worker is active if there's a ping within the timeout period.
-    fn has_active_worker(&self, pool_id: u32) -> bool {
-        let pool = self.pools.get(pool_id).expect("Pool not found");
+    fn has_active_worker(&self, pool: &Pool) -> bool {
         block_timestamp_ms() < pool.last_ping_timestamp_ms + WORKER_PING_TIMEOUT_MS
     }
 }
