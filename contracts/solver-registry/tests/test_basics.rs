@@ -96,7 +96,7 @@ async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
         result.into_result().unwrap_err()
     );
 
-    // Register worker (TODO: verify public key)
+    // Register worker
     let collateral = include_str!("samples/quote_collateral.json").to_string();
     let result = solver_registry
         .call("register_worker")

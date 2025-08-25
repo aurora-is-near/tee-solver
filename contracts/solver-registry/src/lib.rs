@@ -102,10 +102,6 @@ impl Contract {
         let codehash = collateral::verify_codehash(tcb_info, rtmr3);
         self.assert_approved_codehash(&codehash);
 
-        log!("verify result: {:?}", result);
-
-        // TODO: verify predecessor implicit account is derived from this public key
-
         let worker_id = env::predecessor_account_id();
 
         // add the public key to the intents vault
