@@ -22,7 +22,7 @@ mod types;
 mod upgrade;
 mod view;
 
-const WORKER_PING_TIMEOUT_MS: u64 = 10 * 60 * 1000; // 10 minutes
+const WORKER_PING_TIMEOUT_MS: TimestampMs = 10 * 60 * 1000; // 10 minutes
 const GAS_REGISTER_WORKER_CALLBACK: Gas = Gas::from_tgas(10);
 
 #[near(serializers = [json, borsh])]
@@ -77,7 +77,7 @@ impl Contract {
         let worker_id = env::predecessor_account_id();
         // register new worker is allowed only if there's no active worker and the worker is not already registered
         require!(
-            !self.has_active_worker(&pool),
+            !pool.has_active_worker(WORKER_PING_TIMEOUT_MS),
             "Only one active worker is allowed per pool"
         );
         require!(
@@ -190,10 +190,5 @@ impl Contract {
             self.approved_codehashes.contains(codehash),
             "Invalid code hash"
         );
-    }
-
-    /// Assume the worker is active if there's a ping within the timeout period.
-    fn has_active_worker(&self, pool: &Pool) -> bool {
-        block_timestamp_ms() < pool.last_ping_timestamp_ms + WORKER_PING_TIMEOUT_MS
     }
 }

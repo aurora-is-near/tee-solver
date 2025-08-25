@@ -1,6 +1,7 @@
 use near_sdk::{near, BorshStorageKey};
 
 pub type Balance = u128;
+pub type TimestampMs = u64;
 
 #[near]
 #[derive(BorshStorageKey)]

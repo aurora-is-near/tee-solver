@@ -30,7 +30,7 @@ pub struct Pool {
     /// Worker account ID. Only one worker is allowed per pool.
     pub worker_id: Option<AccountId>,
     /// Last ping timestamp by the pool's worker.
-    pub last_ping_timestamp_ms: u64,
+    pub last_ping_timestamp_ms: TimestampMs,
 }
 
 #[near(serializers = [json])]
@@ -46,7 +46,7 @@ pub struct PoolInfo {
     /// Worker account ID. Only one worker is allowed per pool.
     pub worker_id: Option<AccountId>,
     /// Last ping timestamp by the pool's worker.
-    pub last_ping_timestamp_ms: u64,
+    pub last_ping_timestamp_ms: TimestampMs,
 }
 
 impl Pool {
@@ -67,6 +67,11 @@ impl Pool {
             worker_id: None,
             last_ping_timestamp_ms: 0,
         }
+    }
+
+    /// Assume the worker is active if there's a ping within the timeout period.
+    pub fn has_active_worker(&self, timeout_ms: TimestampMs) -> bool {
+        self.worker_id.is_some() && block_timestamp_ms() < self.last_ping_timestamp_ms + timeout_ms
     }
 }
 
