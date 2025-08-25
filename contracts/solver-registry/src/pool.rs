@@ -151,10 +151,6 @@ impl Contract {
             .unwrap()
     }
 
-    pub(crate) fn has_pool(&self, pool_id: u32) -> bool {
-        self.pools.get(pool_id).is_some()
-    }
-
     pub(crate) fn deposit_into_pool(
         &self,
         pool_id: u32,

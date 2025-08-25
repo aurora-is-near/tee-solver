@@ -31,6 +31,16 @@ pub enum Event<'a> {
         worker_id: &'a AccountId,
         timestamp_ms: &'a u64,
     },
+    CodehashApproved {
+        codehash: &'a String,
+    },
+    CodehashRemoved {
+        codehash: &'a String,
+    },
+    OwnerChanged {
+        old_owner_id: &'a AccountId,
+        new_owner_id: &'a AccountId,
+    },
 }
 
 impl Event<'_> {

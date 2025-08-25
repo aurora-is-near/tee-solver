@@ -73,7 +73,6 @@ impl Contract {
         tcb_info: String,
     ) -> Promise {
         assert_one_yocto();
-        require!(self.has_pool(pool_id), "Pool not found");
         require!(!self.has_active_worker(pool_id), "Only one active worker is allowed per pool");
         let pool = self.pools.get(pool_id).expect("Pool not found");
         require!(pool.worker_id.is_none() || pool.worker_id.as_ref().unwrap() != &env::predecessor_account_id(), "Worker already registered");
