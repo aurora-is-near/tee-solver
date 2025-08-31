@@ -79,14 +79,13 @@ async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-
 #[tokio::test]
 async fn test_worker_registration_with_invalid_tee_data() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker registration with invalid TEE data...");
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) = 
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool
@@ -148,7 +147,7 @@ async fn test_worker_registration_requires_sufficient_deposit() -> Result<(), Bo
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
+    let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool
@@ -193,7 +192,7 @@ async fn test_worker_registration_without_codehash_approval() -> Result<(), Box<
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) = 
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool
@@ -219,11 +218,11 @@ async fn test_worker_registration_without_codehash_approval() -> Result<(), Box<
 
 #[tokio::test]
 async fn test_approve_codehash_with_non_owner() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Starting test for worker registration with non-owner...");
+    println!("Starting test for codehash approval with non-owner...");
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) = 
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool
@@ -259,7 +258,7 @@ async fn test_worker_registration_with_invalid_pool_id() -> Result<(), Box<dyn s
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) = 
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool (pool_id = 0)
@@ -286,14 +285,13 @@ async fn test_worker_registration_with_invalid_pool_id() -> Result<(), Box<dyn s
     Ok(())
 }
 
-
 #[tokio::test]
 async fn test_multiple_pools_worker_registration() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for multiple pools worker registration...");
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, owner, alice, bob, _mock_intents, solver_registry) = 
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create multiple liquidity pools
@@ -358,6 +356,63 @@ async fn test_multiple_pools_worker_registration() -> Result<(), Box<dyn std::er
     assert!(result.is_success(), "Bob should be able to ping pool 1");
 
     println!("Test passed: Multiple pools can have different workers");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_worker_registration_edge_cases() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Starting test for worker registration edge cases...");
+    let sandbox = near_workspaces::sandbox().await?;
+
+    // Setup test environment
+    let (wnear, usdc, owner, alice, bob, _mock_intents, solver_registry) = 
+        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+
+    // Create a liquidity pool
+    create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
+
+    // Approve codehash
+    approve_codehash(&owner, &solver_registry).await?;
+
+    // Test 1: Register with valid pool ID
+    println!("Testing registration with valid pool ID...");
+    let result = register_worker_alice(&alice, &solver_registry, 0).await?;
+    assert!(result.is_success(), "Registration with valid pool ID should succeed");
+
+    // Test 2: Try to register same worker again (should fail)
+    println!("Testing duplicate worker registration...");
+    let result = register_worker_alice(&alice, &solver_registry, 0).await?;
+    assert!(
+        !result.is_success(),
+        "Duplicate worker registration should fail"
+    );
+
+    // Test 3: Try to register with very large pool ID
+    println!("Testing registration with very large pool ID...");
+    let result = register_worker_bob(&bob, &solver_registry, u32::MAX).await?;
+    assert!(
+        !result.is_success(),
+        "Registration with very large pool ID should fail"
+    );
+
+    // Test 4: Try to register with empty TEE parameters
+    println!("Testing registration with empty TEE parameters...");
+    let result = register_worker(
+        &bob,
+        &solver_registry,
+        0,
+        "",
+        "",
+        "",
+        "",
+    ).await?;
+    assert!(
+        !result.is_success(),
+        "Registration with empty TEE parameters should fail"
+    );
+
+    println!("Test passed: Worker registration edge cases are properly handled");
 
     Ok(())
 }
