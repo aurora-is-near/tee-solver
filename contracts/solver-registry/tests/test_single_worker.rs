@@ -62,7 +62,8 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
     let mock_intents = deploy_mock_intents(&sandbox).await?;
 
     println!("Deploying Solver Registry contract...");
-    let solver_registry = deploy_solver_registry(&sandbox, &mock_intents, &owner, 10 * 60 * 1000).await?;
+    let solver_registry =
+        deploy_solver_registry(&sandbox, &mock_intents, &owner, 10 * 60 * 1000).await?;
 
     // Register contracts for NEP-141 tokens
     let _ = storage_deposit(&wnear, mock_intents.as_account()).await?;
@@ -407,7 +408,8 @@ async fn test_worker_ping_functionality() -> Result<(), Box<dyn std::error::Erro
     let mock_intents = deploy_mock_intents(&sandbox).await?;
 
     println!("Deploying Solver Registry contract...");
-    let solver_registry = deploy_solver_registry(&sandbox, &mock_intents, &owner, 10 * 60 * 1000).await?;
+    let solver_registry =
+        deploy_solver_registry(&sandbox, &mock_intents, &owner, 10 * 60 * 1000).await?;
 
     // Register contracts for NEP-141 tokens
     let _ = storage_deposit(&wnear, mock_intents.as_account()).await?;
