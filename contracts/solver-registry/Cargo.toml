@@ -36,10 +36,14 @@ container_build_command = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 near-sdk = "5.14.0"
-dcap-qvl = { git = "https://github.com/mattlockyer/dcap-qvl" }
+# Latest `master` as per 2025-08-18
+dcap-qvl = { git = "https://github.com/Phala-Network/dcap-qvl", rev = "3d4f1bb57b104b1701c8bafacfdcf6e03a2bbcad", default-features = false, features=["contract", "borsh", "std"] }
 hex = "0.4.3"
 serde_json = "1.0.140"
 sha2 = "0.10.8"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2.16", features = ["custom"] }
 
 [dev-dependencies]
 near-sdk = { version = "5.14.0", features = ["unit-testing"] }

@@ -20,6 +20,12 @@ pub fn get_collateral(raw_quote_collateral: String) -> QuoteCollateralV3 {
     let qe_identity = quote_collateral["qe_identity"].as_str().unwrap().to_owned();
     let qe_identity_signature =
         hex::decode(quote_collateral["qe_identity_signature"].as_str().unwrap()).unwrap();
+    let pck_crl_issuer_chain = quote_collateral["pck_crl_issuer_chain"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let root_ca_crl = hex::decode(quote_collateral["root_ca_crl"].as_str().unwrap()).unwrap();
+    let pck_crl = hex::decode(quote_collateral["pck_crl"].as_str().unwrap()).unwrap();
 
     QuoteCollateralV3 {
         tcb_info_issuer_chain,
@@ -28,6 +34,9 @@ pub fn get_collateral(raw_quote_collateral: String) -> QuoteCollateralV3 {
         qe_identity_issuer_chain,
         qe_identity,
         qe_identity_signature,
+        pck_crl_issuer_chain,
+        root_ca_crl,
+        pck_crl,
     }
 }
 
