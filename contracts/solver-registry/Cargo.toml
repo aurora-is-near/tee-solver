@@ -37,7 +37,7 @@ container_build_command = [
 [dependencies]
 near-sdk = "5.14.0"
 # Latest `master` as per 2025-08-18
-dcap-qvl = { git = "https://github.com/Phala-Network/dcap-qvl", rev = "3d4f1bb57b104b1701c8bafacfdcf6e03a2bbcad", default-features = false, features=["contract", "borsh", "std"] }
+dcap-qvl = { version = "0.3.2", default-features = false, features=["contract", "borsh", "std"] }
 hex = "0.4.3"
 serde_json = "1.0.140"
 sha2 = "0.10.8"
