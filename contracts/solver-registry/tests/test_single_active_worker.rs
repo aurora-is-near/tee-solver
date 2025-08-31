@@ -1,14 +1,8 @@
-use std::str::FromStr;
-
-use near_gas::NearGas;
-use near_sdk::NearToken;
-use near_workspaces::types::SecretKey;
 use serde_json::json;
 
 mod constants;
 mod utils;
 
-use constants::*;
 use utils::*;
 
 #[tokio::test]
@@ -274,7 +268,7 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
     );
     assert_eq!(
         pool_final.worker_id,
-        Some(bob.id()),
+        Some(bob.id().clone()),
         "Bob should be the active worker for the pool"
     );
 
@@ -359,7 +353,7 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging(
     // Verify that Alice is still technically the worker (but inactive)
     assert_eq!(
         pool_after_timeout.worker_id,
-        Some(alice.id()),
+        Some(alice.id().clone()),
         "Alice should still be the worker in the pool (but inactive)"
     );
 
@@ -406,7 +400,7 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging(
     let pool_final = get_pool_info(&solver_registry, 0).await?;
     assert_eq!(
         pool_final.worker_id,
-        Some(alice.id()),
+        Some(alice.id().clone()),
         "Alice should still be the active worker for the pool"
     );
 
@@ -514,7 +508,7 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
     // Verify that Alice is still technically the worker (but inactive)
     assert_eq!(
         pool_after_timeout.worker_id,
-        Some(alice.id()),
+        Some(alice.id().clone()),
         "Alice should still be the worker in the pool (but inactive)"
     );
 
@@ -553,7 +547,7 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
     );
     assert_eq!(
         pool_final.worker_id,
-        Some(bob.id()),
+        Some(bob.id().clone()),
         "Bob should be the active worker for the pool"
     );
 
@@ -591,6 +585,36 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
     println!("Expected error received: {:?}", error);
 
     println!("Test passed: Worker can register after inactive worker timeout");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_worker_ping_without_registration() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Starting test for worker ping without registration...");
+    let sandbox = near_workspaces::sandbox().await?;
+
+    // Setup test environment
+    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+
+    // Create a liquidity pool
+    create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
+
+    // Try to ping without being registered as a worker
+    println!("Attempting to ping without worker registration...");
+    let result = ping_worker(&alice, &solver_registry).await?;
+
+    // Ping should fail without registration
+    assert!(
+        !result.is_success(),
+        "Ping should fail without worker registration"
+    );
+
+    let error = result.into_result().unwrap_err();
+    println!("Expected error received: {:?}", error);
+
+    println!("Test passed: Worker ping requires registration");
 
     Ok(())
 }

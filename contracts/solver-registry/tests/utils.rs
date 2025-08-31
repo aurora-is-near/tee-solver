@@ -524,3 +524,142 @@ pub async fn demonstrate_active_worker_pinging(
     println!("Active worker pinging demonstration completed");
     Ok(())
 }
+
+// Helper function to create multiple liquidity pools
+pub async fn create_multiple_liquidity_pools(
+    solver_registry: &Contract,
+    wnear: &Contract,
+    usdc: &Contract,
+    num_pools: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Creating {} liquidity pools...", num_pools);
+    
+    for i in 0..num_pools {
+        let fee = 300 + (i * 100); // Different fees for each pool
+        let result = solver_registry
+            .call("create_liquidity_pool")
+            .args_json(json!({
+                "token_ids": [wnear.id(), usdc.id()],
+                "fee": fee
+            }))
+            .deposit(NearToken::from_yoctonear(1_500_000_000_000_000_000_000_000)) // 1.5 NEAR
+            .gas(NearGas::from_tgas(300))
+            .transact()
+            .await?;
+        
+        assert!(
+            result.is_success(),
+            "Pool {} creation should succeed: {:#?}",
+            i,
+            result.into_result().unwrap_err()
+        );
+        
+        println!("Created pool {} with fee {}", i, fee);
+    }
+    
+    println!("Successfully created {} liquidity pools", num_pools);
+    Ok(())
+}
+
+// Helper function to test worker registration with custom parameters
+pub async fn test_worker_registration_with_params(
+    worker: &Account,
+    solver_registry: &Contract,
+    pool_id: u32,
+    quote_hex: &str,
+    collateral: &str,
+    checksum: &str,
+    tcb_info: &str,
+    deposit: NearToken,
+) -> Result<near_workspaces::result::ExecutionFinalResult, Box<dyn std::error::Error>> {
+    let result = worker
+        .call(solver_registry.id(), "register_worker")
+        .args_json(json!({
+            "pool_id": pool_id,
+            "quote_hex": quote_hex.to_string(),
+            "collateral": collateral.to_string(),
+            "checksum": checksum.to_string(),
+            "tcb_info": tcb_info.to_string()
+        }))
+        .deposit(deposit)
+        .gas(NearGas::from_tgas(300))
+        .transact()
+        .await?;
+    
+    print_logs(&result);
+    Ok(result)
+}
+
+// Helper function to verify pool state
+pub async fn verify_pool_state(
+    solver_registry: &Contract,
+    pool_id: u32,
+    expected_worker_id: Option<&Account>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let pool = get_pool_info(solver_registry, pool_id).await?;
+    
+    match expected_worker_id {
+        Some(worker) => {
+            assert_eq!(
+                pool.worker_id,
+                Some(worker.id()),
+                "Pool {} should have worker {}", pool_id, worker.id()
+            );
+        }
+        None => {
+            assert!(
+                pool.worker_id.is_none(),
+                "Pool {} should not have any worker", pool_id
+            );
+        }
+    }
+    
+    println!("Pool {} state verified successfully", pool_id);
+    Ok(())
+}
+
+// Helper function to test timeout scenarios
+pub async fn test_worker_timeout_scenario(
+    worker: &Account,
+    solver_registry: &Contract,
+    timeout_seconds: u64,
+    should_timeout: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Testing worker timeout scenario (timeout: {}s, should_timeout: {})", timeout_seconds, should_timeout);
+    
+    // Get initial pool state
+    let pool_initial = get_pool_info(solver_registry, 0).await?;
+    let initial_timestamp = pool_initial.last_ping_timestamp_ms;
+    
+    if should_timeout {
+        // Wait for timeout
+        wait_for_worker_timeout(timeout_seconds).await;
+        
+        // Try to ping after timeout
+        let result = ping_worker(worker, solver_registry).await?;
+        assert!(
+            !result.is_success(),
+            "Worker should not be able to ping after timeout"
+        );
+        
+        println!("Worker timeout scenario verified successfully");
+    } else {
+        // Ping before timeout to maintain active status
+        let result = ping_worker(worker, solver_registry).await?;
+        assert!(
+            result.is_success(),
+            "Worker should be able to ping before timeout"
+        );
+        
+        // Verify timestamp was updated
+        let pool_after = get_pool_info(solver_registry, 0).await?;
+        assert!(
+            pool_after.last_ping_timestamp_ms > initial_timestamp,
+            "Ping timestamp should be updated"
+        );
+        
+        println!("Worker active scenario verified successfully");
+    }
+    
+    Ok(())
+}
