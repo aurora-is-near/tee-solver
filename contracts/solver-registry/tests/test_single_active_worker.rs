@@ -1,9 +1,8 @@
 use serde_json::json;
 
-mod constants;
-mod utils;
+mod common;
 
-use utils::*;
+use common::utils::*;
 
 #[tokio::test]
 async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error::Error>> {
@@ -11,7 +10,7 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
+    let (wnear, usdc, owner, alice, bob, _mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool
@@ -87,7 +86,7 @@ async fn test_worker_ping_functionality() -> Result<(), Box<dyn std::error::Erro
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
+    let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool
@@ -181,7 +180,7 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment with shorter timeout for testing
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
+    let (wnear, usdc, owner, alice, bob, _mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 5 * 1000).await?;
 
     // Create a liquidity pool
@@ -253,12 +252,10 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
     );
     assert_eq!(bob_worker.pool_id, 0, "Bob should be registered for pool 0");
 
-    // Verify that Alice is no longer the active worker
+    // Verify that Alice is still registered although it's not active
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
-    assert!(
-        alice_worker_option.is_none(),
-        "Alice should no longer be registered as a worker after timeout"
-    );
+    let alice_worker = alice_worker_option.expect("Alice should still exists as a worker");
+    assert_eq!(alice_worker.pool_id, 0, "Alice should still be registered for pool 0");
 
     // Verify that Bob is now the active worker for the pool
     let pool_final = get_pool_info(&solver_registry, 0).await?;
@@ -284,7 +281,7 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging(
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment with short timeout for testing (5 seconds)
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
+    let (wnear, usdc, owner, alice, bob, _mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 5 * 1000).await?;
 
     // Create a liquidity pool
@@ -439,7 +436,7 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment with short timeout for testing (5 seconds)
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
+    let (wnear, usdc, owner, alice, bob, _mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 5 * 1000).await?;
 
     // Create a liquidity pool
@@ -532,12 +529,10 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
     );
     assert_eq!(bob_worker.pool_id, 0, "Bob should be registered for pool 0");
 
-    // Verify that Alice is no longer the active worker
+    // Verify that Alice is still registered although it's not active
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
-    assert!(
-        alice_worker_option.is_none(),
-        "Alice should no longer be registered as a worker after timeout"
-    );
+    let alice_worker = alice_worker_option.expect("Alice should still exists as a worker");
+    assert_eq!(alice_worker.pool_id, 0, "Alice should still be registered for pool 0");
 
     // Verify that Bob is now the active worker for the pool
     let pool_final = get_pool_info(&solver_registry, 0).await?;
@@ -595,7 +590,7 @@ async fn test_worker_ping_without_registration() -> Result<(), Box<dyn std::erro
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, _owner, alice, _bob, _mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use near_contract_standards::fungible_token::{metadata::FungibleTokenMetadata, Balance};
 use near_gas::NearGas;
 use near_sdk::{json_types::U128, near, AccountId, NearToken};
@@ -11,6 +13,8 @@ pub const SOLVER_REGISTRY_CONTRACT_WASM: &str =
     "../../target/near/solver_registry/solver_registry.wasm";
 pub const MOCK_INTENTS_CONTRACT_WASM: &str = "../../target/near/mock_intents/mock_intents.wasm";
 pub const MOCK_FT_CONTRACT_WASM: &str = "../../target/near/mock_ft/mock_ft.wasm";
+
+use super::constants::*;
 
 #[near(serializers = [json, borsh])]
 #[derive(Clone)]
@@ -260,14 +264,14 @@ pub async fn create_test_accounts(
         sandbox,
         "alice",
         10,
-        SecretKey::from_str(crate::constants::SECRET_KEY_ALICE).unwrap(),
+        SecretKey::from_str(SECRET_KEY_ALICE).unwrap(),
     )
     .await?;
     let bob = create_account_with_secret_key(
         sandbox,
         "bob",
         10,
-        SecretKey::from_str(crate::constants::SECRET_KEY_BOB).unwrap(),
+        SecretKey::from_str(SECRET_KEY_BOB).unwrap(),
     )
     .await?;
 
@@ -372,7 +376,7 @@ pub async fn approve_codehash(
     let result = owner
         .call(solver_registry.id(), "approve_codehash")
         .args_json(json!({
-            "codehash": crate::constants::CODE_HASH
+            "codehash": CODE_HASH
         }))
         .transact()
         .await?;
@@ -422,10 +426,10 @@ pub async fn register_worker_alice(
         alice,
         solver_registry,
         pool_id,
-        crate::constants::QUOTE_HEX_ALICE,
-        crate::constants::QUOTE_COLLATERAL_ALICE,
-        crate::constants::CHECKSUM_ALICE,
-        crate::constants::TCB_INFO_ALICE,
+        QUOTE_HEX_ALICE,
+        QUOTE_COLLATERAL_ALICE,
+        CHECKSUM_ALICE,
+        TCB_INFO_ALICE,
     )
     .await
 }
@@ -440,10 +444,10 @@ pub async fn register_worker_bob(
         bob,
         solver_registry,
         pool_id,
-        crate::constants::QUOTE_HEX_BOB,
-        crate::constants::QUOTE_COLLATERAL_BOB,
-        crate::constants::CHECKSUM_BOB,
-        crate::constants::TCB_INFO_BOB,
+        QUOTE_HEX_BOB,
+        QUOTE_COLLATERAL_BOB,
+        CHECKSUM_BOB,
+        TCB_INFO_BOB,
     )
     .await
 }
