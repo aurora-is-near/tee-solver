@@ -602,7 +602,7 @@ pub async fn verify_pool_state(
         Some(worker) => {
             assert_eq!(
                 pool.worker_id,
-                Some(worker.id()),
+                Some(worker.id().clone()),
                 "Pool {} should have worker {}", pool_id, worker.id()
             );
         }
