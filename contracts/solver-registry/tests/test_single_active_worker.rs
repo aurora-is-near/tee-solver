@@ -1,5 +1,3 @@
-use serde_json::json;
-
 mod common;
 
 use common::utils::*;
@@ -29,11 +27,8 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
     );
 
     // Verify first worker is registered
-    let result_get_worker = solver_registry
-        .view("get_worker")
-        .args_json(json!({"account_id" : alice.id()}))
-        .await?;
-    let worker: WorkerInfo = serde_json::from_slice(&result_get_worker.result).unwrap();
+    let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
+    let worker = alice_worker_option.expect("Alice should be registered as a worker");
     println!(
         "\n [LOG] First Worker (Alice): {{ checksum: {}, codehash: {}, poolId: {} }}",
         worker.checksum, worker.codehash, worker.pool_id
@@ -53,23 +48,15 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
     println!("Expected error received: {:?}", error);
 
     // Verify that Bob is not registered as a worker
-    let result_get_bob_worker = solver_registry
-        .view("get_worker")
-        .args_json(json!({"account_id" : bob.id()}))
-        .await?;
-    let bob_worker_option: Option<WorkerInfo> =
-        serde_json::from_slice(&result_get_bob_worker.result).unwrap();
+    let bob_worker_option = get_worker_info(&solver_registry, &bob).await?;
     assert!(
         bob_worker_option.is_none(),
         "Bob should not be registered as a worker"
     );
 
     // Verify that Alice is still the only worker for the pool
-    let result_get_alice_worker = solver_registry
-        .view("get_worker")
-        .args_json(json!({"account_id" : alice.id()}))
-        .await?;
-    let alice_worker: WorkerInfo = serde_json::from_slice(&result_get_alice_worker.result).unwrap();
+    let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
+    let alice_worker = alice_worker_option.expect("Alice should be registered as a worker");
     assert_eq!(
         alice_worker.pool_id, 0,
         "Alice should still be registered for pool 0"
@@ -86,7 +73,7 @@ async fn test_worker_ping_functionality() -> Result<(), Box<dyn std::error::Erro
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
+    let (wnear, usdc, owner, alice, bob, _mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool
@@ -135,7 +122,6 @@ async fn test_worker_ping_functionality() -> Result<(), Box<dyn std::error::Erro
 
     // Test that only the registered worker can ping
     println!("Testing that only the registered worker can ping...");
-    let bob = create_account(&sandbox, "bob", 10).await?;
     let result = ping_worker(&bob, &solver_registry).await?;
 
     // Bob should not be able to ping since he's not a registered worker
@@ -199,11 +185,8 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
     );
 
     // Verify first worker is registered
-    let result_get_worker = solver_registry
-        .view("get_worker")
-        .args_json(json!({"account_id" : alice.id()}))
-        .await?;
-    let worker: WorkerInfo = serde_json::from_slice(&result_get_worker.result).unwrap();
+    let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
+    let worker = alice_worker_option.expect("Alice should be registered as a worker");
     println!(
         "\n [LOG] First Worker (Alice): {{ checksum: {}, codehash: {}, poolId: {} }}",
         worker.checksum, worker.codehash, worker.pool_id
@@ -255,7 +238,10 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
     // Verify that Alice is still registered although it's not active
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
     let alice_worker = alice_worker_option.expect("Alice should still exists as a worker");
-    assert_eq!(alice_worker.pool_id, 0, "Alice should still be registered for pool 0");
+    assert_eq!(
+        alice_worker.pool_id, 0,
+        "Alice should still be registered for pool 0"
+    );
 
     // Verify that Bob is now the active worker for the pool
     let pool_final = get_pool_info(&solver_registry, 0).await?;
@@ -532,7 +518,10 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
     // Verify that Alice is still registered although it's not active
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
     let alice_worker = alice_worker_option.expect("Alice should still exists as a worker");
-    assert_eq!(alice_worker.pool_id, 0, "Alice should still be registered for pool 0");
+    assert_eq!(
+        alice_worker.pool_id, 0,
+        "Alice should still be registered for pool 0"
+    );
 
     // Verify that Bob is now the active worker for the pool
     let pool_final = get_pool_info(&solver_registry, 0).await?;
