@@ -291,7 +291,18 @@ pub async fn register_accounts_for_tokens(
 pub async fn setup_test_environment(
     sandbox: &Worker<Sandbox>,
     worker_ping_timeout_ms: TimestampMs,
-) -> Result<(Contract, Contract, Account, Account, Account, Contract, Contract), Box<dyn std::error::Error>> {
+) -> Result<
+    (
+        Contract,
+        Contract,
+        Account,
+        Account,
+        Account,
+        Contract,
+        Contract,
+    ),
+    Box<dyn std::error::Error>,
+> {
     // Create test tokens
     let (wnear, usdc) = create_test_tokens(sandbox).await?;
 
@@ -306,12 +317,26 @@ pub async fn setup_test_environment(
     let mock_intents = deploy_mock_intents(sandbox).await?;
 
     println!("Deploying Solver Registry contract...");
-    let solver_registry = deploy_solver_registry(sandbox, &mock_intents, &owner, worker_ping_timeout_ms).await?;
+    let solver_registry =
+        deploy_solver_registry(sandbox, &mock_intents, &owner, worker_ping_timeout_ms).await?;
 
     // Register contracts for NEP-141 tokens
-    register_accounts_for_tokens(&wnear, &usdc, &[mock_intents.as_account(), solver_registry.as_account()]).await?;
+    register_accounts_for_tokens(
+        &wnear,
+        &usdc,
+        &[mock_intents.as_account(), solver_registry.as_account()],
+    )
+    .await?;
 
-    Ok((wnear, usdc, owner, alice, bob, mock_intents, solver_registry))
+    Ok((
+        wnear,
+        usdc,
+        owner,
+        alice,
+        bob,
+        mock_intents,
+        solver_registry,
+    ))
 }
 
 // Helper function to create a liquidity pool
@@ -382,11 +407,10 @@ pub async fn register_worker(
         .gas(NearGas::from_tgas(300))
         .transact()
         .await?;
-    
+
     print_logs(&result);
     Ok(result)
 }
-
 
 // Helper function to register Alice as a worker
 pub async fn register_worker_alice(
@@ -402,7 +426,8 @@ pub async fn register_worker_alice(
         crate::constants::QUOTE_COLLATERAL_ALICE,
         crate::constants::CHECKSUM_ALICE,
         crate::constants::TCB_INFO_ALICE,
-    ).await
+    )
+    .await
 }
 
 // Helper function to register Bob as a worker
@@ -419,14 +444,18 @@ pub async fn register_worker_bob(
         crate::constants::QUOTE_COLLATERAL_BOB,
         crate::constants::CHECKSUM_BOB,
         crate::constants::TCB_INFO_BOB,
-    ).await
+    )
+    .await
 }
-
 
 // Helper function to wait for worker timeout
 pub async fn wait_for_worker_timeout(timeout_seconds: u64) {
-    println!("Waiting for worker timeout ({} seconds)...", timeout_seconds);
-    tokio::time::sleep(tokio::time::Duration::from_secs(timeout_seconds + 1)).await; // Add 1 second buffer
+    println!(
+        "Waiting for worker timeout ({} seconds)...",
+        timeout_seconds
+    );
+    tokio::time::sleep(tokio::time::Duration::from_secs(timeout_seconds + 1)).await;
+    // Add 1 second buffer
 }
 
 // Helper function to get worker info
@@ -471,8 +500,11 @@ pub async fn demonstrate_active_worker_pinging(
     num_pings: u32,
     delay_ms: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("Demonstrating active worker pinging with {} pings and {}ms delay...", num_pings, delay_ms);
-    
+    println!(
+        "Demonstrating active worker pinging with {} pings and {}ms delay...",
+        num_pings, delay_ms
+    );
+
     for i in 1..=num_pings {
         println!("Ping {} of {}...", i, num_pings);
         let result = ping_worker(worker, solver_registry).await?;
@@ -482,13 +514,13 @@ pub async fn demonstrate_active_worker_pinging(
             i,
             result.into_result().unwrap_err()
         );
-        
+
         // Configurable delay between pings to ensure timestamp differences
         if i < num_pings {
             tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
         }
     }
-    
+
     println!("Active worker pinging demonstration completed");
     Ok(())
 }

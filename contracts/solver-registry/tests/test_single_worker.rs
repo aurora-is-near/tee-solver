@@ -17,7 +17,7 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool
@@ -87,14 +87,13 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
     Ok(())
 }
 
-
 #[tokio::test]
 async fn test_worker_ping_functionality() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker ping functionality...");
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool
@@ -182,14 +181,13 @@ async fn test_worker_ping_functionality() -> Result<(), Box<dyn std::error::Erro
     Ok(())
 }
 
-
 #[tokio::test]
 async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker replacement after timeout...");
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment with shorter timeout for testing
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 5 * 1000).await?;
 
     // Create a liquidity pool
@@ -259,10 +257,7 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
         "\n [LOG] New Worker (Bob): {{ checksum: {}, codehash: {}, poolId: {} }}",
         bob_worker.checksum, bob_worker.codehash, bob_worker.pool_id
     );
-    assert_eq!(
-        bob_worker.pool_id, 0,
-        "Bob should be registered for pool 0"
-    );
+    assert_eq!(bob_worker.pool_id, 0, "Bob should be registered for pool 0");
 
     // Verify that Alice is no longer the active worker
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
@@ -289,12 +284,13 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
 }
 
 #[tokio::test]
-async fn test_worker_cannot_register_while_active_worker_is_pinging() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_worker_cannot_register_while_active_worker_is_pinging(
+) -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker cannot register while active worker is pinging...");
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment with short timeout for testing (5 seconds)
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 5 * 1000).await?;
 
     // Create a liquidity pool
@@ -399,7 +395,8 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging() -> Result<
 
     // Verify that Alice is still the active worker
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
-    let alice_worker_final = alice_worker_option.expect("Alice should still be registered as a worker");
+    let alice_worker_final =
+        alice_worker_option.expect("Alice should still be registered as a worker");
     assert_eq!(
         alice_worker_final.pool_id, 0,
         "Alice should still be registered for pool 0"
@@ -431,7 +428,8 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging() -> Result<
 
     // Verify that the final ping timestamp is greater than the previous one
     assert!(
-        pool_final_after_ping.last_ping_timestamp_ms > pool_after_active_pinging.last_ping_timestamp_ms,
+        pool_final_after_ping.last_ping_timestamp_ms
+            > pool_after_active_pinging.last_ping_timestamp_ms,
         "Final ping timestamp should be greater than the previous ping"
     );
 
@@ -441,12 +439,13 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging() -> Result<
 }
 
 #[tokio::test]
-async fn test_worker_can_register_after_inactive_worker_timeout() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_worker_can_register_after_inactive_worker_timeout(
+) -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker can register after inactive worker timeout...");
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment with short timeout for testing (5 seconds)
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 5 * 1000).await?;
 
     // Create a liquidity pool
@@ -537,10 +536,7 @@ async fn test_worker_can_register_after_inactive_worker_timeout() -> Result<(), 
         "\n [LOG] Bob registered: {{ checksum: {}, codehash: {}, poolId: {} }}",
         bob_worker.checksum, bob_worker.codehash, bob_worker.pool_id
     );
-    assert_eq!(
-        bob_worker.pool_id, 0,
-        "Bob should be registered for pool 0"
-    );
+    assert_eq!(bob_worker.pool_id, 0, "Bob should be registered for pool 0");
 
     // Verify that Alice is no longer the active worker
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;

@@ -17,7 +17,7 @@ async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) = 
+    let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
         setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
 
     // Create a liquidity pool
@@ -52,7 +52,7 @@ async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create a funder account for token transfers
     let funder = create_account(&sandbox, "funder", 10).await?;
-    
+
     // Register funder for NEP-141 tokens
     let _ = storage_deposit(&wnear, &funder).await?;
     let _ = storage_deposit(&usdc, &funder).await?;
