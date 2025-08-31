@@ -1,9 +1,11 @@
-use crate::types::TimestampMs;
 use near_contract_standards::fungible_token::{metadata::FungibleTokenMetadata, Balance};
 use near_gas::NearGas;
 use near_sdk::{json_types::U128, near, AccountId, NearToken};
-use near_workspaces::{network::Sandbox, result::ExecutionFinalResult, Account, Contract, Worker};
+use near_workspaces::{
+    network::Sandbox, result::ExecutionFinalResult, types::SecretKey, Account, Contract, Worker,
+};
 use serde_json::json;
+use solver_registry::types::TimestampMs;
 
 pub const SOLVER_REGISTRY_CONTRACT_WASM: &str =
     "../../target/near/solver_registry/solver_registry.wasm";

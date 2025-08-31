@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use near_gas::NearGas;
 use near_sdk::NearToken;
+use near_workspaces::types::SecretKey;
 use serde_json::json;
 
 mod constants;
@@ -35,7 +38,13 @@ async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
 
     let owner = create_account(&sandbox, "owner", 10).await?;
     let funder = create_account(&sandbox, "funder", 10).await?;
-    let alice = create_account_with_secret_key(&sandbox, "worker", 10, SecretKey::from_str(&SECRET_KEY_ALICE).unwrap()).await?;
+    let alice = create_account_with_secret_key(
+        &sandbox,
+        "worker",
+        10,
+        SecretKey::from_str(SECRET_KEY_ALICE).unwrap(),
+    )
+    .await?;
 
     // Reigster accounts for NEP-141 tokens
     let _ = storage_deposit(&wnear, &funder).await?;

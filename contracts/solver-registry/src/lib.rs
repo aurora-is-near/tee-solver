@@ -18,7 +18,7 @@ mod events;
 mod ext;
 mod pool;
 mod token_receiver;
-mod types;
+pub mod types;
 mod upgrade;
 mod view;
 
