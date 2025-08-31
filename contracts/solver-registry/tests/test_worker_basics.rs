@@ -106,11 +106,6 @@ async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
         result.into_result().unwrap_err()
     );
 
-    println!("quote_hex: {}", QUOTE_HEX_ALICE.to_string());
-    println!("collateral: {}", QUOTE_COLLATERAL_ALICE.to_string());
-    println!("checksum: {}", CHECKSUM_ALICE.to_string());
-    println!("tcb_info: {}", TCB_INFO_ALICE.to_string());
-
     // Register worker
     let result = alice
         .call(solver_registry.id(), "register_worker")
