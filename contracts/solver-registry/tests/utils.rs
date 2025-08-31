@@ -216,3 +216,10 @@ pub async fn deposit_into_pool(
 
     Ok(result)
 }
+
+// Helper function to print execution logs
+pub fn print_logs(result: &near_workspaces::result::ExecutionFinalResult) {
+    for (i, log) in result.logs().iter().enumerate() {
+        println!("  [{}] {}", i + 1, log);
+    }
+}

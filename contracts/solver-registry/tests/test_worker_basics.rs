@@ -106,14 +106,18 @@ async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
         result.into_result().unwrap_err()
     );
 
+    println!("quote_hex: {}", QUOTE_HEX_ALICE.to_string());
+    println!("collateral: {}", QUOTE_COLLATERAL_ALICE.to_string());
+    println!("checksum: {}", CHECKSUM_ALICE.to_string());
+    println!("tcb_info: {}", TCB_INFO_ALICE.to_string());
+
     // Register worker
-    let collateral = include_str!("samples/alice/quote_collateral.json").to_string();
     let result = alice
         .call(solver_registry.id(), "register_worker")
         .args_json(json!({
             "pool_id": 0,
             "quote_hex": QUOTE_HEX_ALICE.to_string(),
-            "collateral": collateral,
+            "collateral": QUOTE_COLLATERAL_ALICE.to_string(),
             "checksum": CHECKSUM_ALICE.to_string(),
             "tcb_info": TCB_INFO_ALICE.to_string()
         }))
@@ -121,6 +125,7 @@ async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
         .gas(NearGas::from_tgas(300))
         .transact()
         .await?;
+    print_logs(&result);
     assert!(
         result.is_success(),
         "{:#?}",
