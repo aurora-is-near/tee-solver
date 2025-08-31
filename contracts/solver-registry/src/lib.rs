@@ -3,7 +3,7 @@ use hex::{decode, encode};
 use near_sdk::{
     assert_one_yocto,
     env::{self, block_timestamp, block_timestamp_ms},
-    ext_contract, log, near, require,
+    ext_contract, near, require,
     store::{IterableMap, IterableSet, Vector},
     AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseError, PublicKey,
 };
@@ -22,7 +22,6 @@ mod types;
 mod upgrade;
 mod view;
 
-const WORKER_PING_TIMEOUT_MS: TimestampMs = 10 * 60 * 1000; // 10 minutes
 const GAS_REGISTER_WORKER_CALLBACK: Gas = Gas::from_tgas(10);
 
 #[near(serializers = [json, borsh])]
@@ -41,6 +40,7 @@ pub struct Contract {
     pools: Vector<Pool>,
     approved_codehashes: IterableSet<String>,
     worker_by_account_id: IterableMap<AccountId, Worker>,
+    worker_ping_timeout_ms: TimestampMs,
 }
 
 #[allow(dead_code)]
@@ -53,13 +53,18 @@ trait IntentsVaultContract {
 impl Contract {
     #[init]
     #[private]
-    pub fn new(owner_id: AccountId, intents_contract_id: AccountId) -> Self {
+    pub fn new(
+        owner_id: AccountId,
+        intents_contract_id: AccountId,
+        worker_ping_timeout_ms: TimestampMs,
+    ) -> Self {
         Self {
             owner_id,
             intents_contract_id,
             pools: Vector::new(Prefix::Pools),
             approved_codehashes: IterableSet::new(Prefix::ApprovedCodeHashes),
             worker_by_account_id: IterableMap::new(Prefix::WorkerByAccountId),
+            worker_ping_timeout_ms,
         }
     }
 
@@ -77,7 +82,7 @@ impl Contract {
         let worker_id = env::predecessor_account_id();
         // register new worker is allowed only if there's no active worker and the worker is not already registered
         require!(
-            !pool.has_active_worker(WORKER_PING_TIMEOUT_MS),
+            !pool.has_active_worker(self.worker_ping_timeout_ms),
             "Only one active worker is allowed per pool"
         );
         require!(

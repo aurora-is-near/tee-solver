@@ -37,4 +37,8 @@ impl Contract {
             .take(limit as usize)
             .collect()
     }
+
+    pub fn get_worker_ping_timeout_ms(&self) -> TimestampMs {
+        self.worker_ping_timeout_ms
+    }
 }

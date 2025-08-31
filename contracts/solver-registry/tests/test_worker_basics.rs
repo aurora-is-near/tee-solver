@@ -8,7 +8,6 @@ mod utils;
 use constants::*;
 use utils::*;
 
-#[ignore = "The remote attestation report data cannot be equal to the public key"]
 #[tokio::test]
 async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test...");
@@ -35,17 +34,19 @@ async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
     .await?;
 
     let owner = create_account(&sandbox, "owner", 10).await?;
-    let alice = create_account(&sandbox, "alice", 10).await?;
+    let funder = create_account(&sandbox, "funder", 10).await?;
+    let alice = create_account_with_secret_key(&sandbox, "worker", 10, SecretKey::from_str(&SECRET_KEY_ALICE).unwrap()).await?;
 
     // Reigster accounts for NEP-141 tokens
-    let _ = storage_deposit(&wnear, &alice).await?;
-    let _ = storage_deposit(&usdc, &alice).await?;
+    let _ = storage_deposit(&wnear, &funder).await?;
+    let _ = storage_deposit(&usdc, &funder).await?;
 
     println!("Deploying mockd intents contract...");
     let mock_intents = deploy_mock_intents(&sandbox).await?;
 
     println!("Deploying Solver Registry contract...");
-    let solver_registry = deploy_solver_registry(&sandbox, &mock_intents, &owner).await?;
+    let solver_registry =
+        deploy_solver_registry(&sandbox, &mock_intents, &owner, 10 * 60 * 1000).await?;
 
     // Reigster contracts for NEP-141 tokens
     let _ = storage_deposit(&wnear, mock_intents.as_account()).await?;
@@ -97,15 +98,15 @@ async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Register worker
-    let collateral = include_str!("samples/quote_collateral.json").to_string();
-    let result = solver_registry
-        .call("register_worker")
+    let collateral = include_str!("samples/alice/quote_collateral.json").to_string();
+    let result = alice
+        .call(solver_registry.id(), "register_worker")
         .args_json(json!({
             "pool_id": 0,
-            "quote_hex": QUOTE_HEX.to_string(),
+            "quote_hex": QUOTE_HEX_ALICE.to_string(),
             "collateral": collateral,
-            "checksum": CHECKSUM.to_string(),
-            "tcb_info": TCB_INFO.to_string()
+            "checksum": CHECKSUM_ALICE.to_string(),
+            "tcb_info": TCB_INFO_ALICE.to_string()
         }))
         .deposit(NearToken::from_yoctonear(1))
         .gas(NearGas::from_tgas(300))
@@ -119,35 +120,35 @@ async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
 
     let result_get_worker = solver_registry
         .view("get_worker")
-        .args_json(json!({"account_id" : solver_registry.id()}))
+        .args_json(json!({"account_id" : alice.id()}))
         .await?;
 
-    let worker: WorkerInfo = serde_json::from_slice(&result_get_worker.result).unwrap();
+    let worker_info: WorkerInfo = serde_json::from_slice(&result_get_worker.result).unwrap();
     println!(
         "\n [LOG] Worker: {{ checksum: {}, codehash: {}, poolId: {} }}",
-        worker.checksum, worker.codehash, worker.pool_id
+        worker_info.checksum, worker_info.codehash, worker_info.pool_id
     );
 
     // Transfer some wNEAR and USDC to Alice
     let _ = ft_transfer(
         &wnear,
         wnear.as_account(),
-        &alice,
+        &funder,
         NearToken::from_near(100).as_yoctonear(),
     )
     .await?;
-    let _ = ft_transfer(&usdc, usdc.as_account(), &alice, 500_000_000).await?;
+    let _ = ft_transfer(&usdc, usdc.as_account(), &funder, 500_000_000).await?;
 
     // Deposint some 10 NEAR and 50 USDC into liquidity pool
     let _ = deposit_into_pool(
         &solver_registry,
-        &alice,
+        &funder,
         0,
         &wnear,
         NearToken::from_near(10).as_yoctonear(),
     )
     .await?;
-    let _ = deposit_into_pool(&solver_registry, &alice, 0, &usdc, 50_000_000).await?;
+    let _ = deposit_into_pool(&solver_registry, &funder, 0, &usdc, 50_000_000).await?;
 
     Ok(())
 }

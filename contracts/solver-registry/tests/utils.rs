@@ -1,3 +1,4 @@
+use crate::types::TimestampMs;
 use near_contract_standards::fungible_token::{metadata::FungibleTokenMetadata, Balance};
 use near_gas::NearGas;
 use near_sdk::{json_types::U128, near, AccountId, NearToken};
@@ -24,6 +25,8 @@ pub struct PoolInfo {
     pub amounts: Vec<U128>,
     pub fee: u32,
     pub shares_total_supply: U128,
+    pub worker_id: Option<AccountId>,
+    pub last_ping_timestamp_ms: TimestampMs,
 }
 
 pub async fn create_account(
@@ -35,6 +38,22 @@ pub async fn create_account(
     Ok(root
         .create_subaccount(prefix)
         .initial_balance(NearToken::from_near(balance))
+        .transact()
+        .await?
+        .result)
+}
+
+pub async fn create_account_with_secret_key(
+    sandbox: &Worker<Sandbox>,
+    prefix: &str,
+    balance: Balance,
+    secret_key: SecretKey,
+) -> Result<Account, Box<dyn std::error::Error>> {
+    let root = sandbox.root_account().unwrap();
+    Ok(root
+        .create_subaccount(prefix)
+        .initial_balance(NearToken::from_near(balance))
+        .keys(secret_key)
         .transact()
         .await?
         .result)
@@ -144,6 +163,7 @@ pub async fn deploy_solver_registry(
     sandbox: &Worker<Sandbox>,
     intents_contract: &Contract,
     owner: &Account,
+    worker_ping_timeout_ms: TimestampMs,
 ) -> Result<Contract, Box<dyn std::error::Error>> {
     let solver_registry_contract_wasm =
         std::fs::read(SOLVER_REGISTRY_CONTRACT_WASM).expect("Contract wasm not found");
@@ -159,6 +179,7 @@ pub async fn deploy_solver_registry(
         .args_json(json!({
             "owner_id": owner.id(),
             "intents_contract_id": intents_contract.id(),
+            "worker_ping_timeout_ms": worker_ping_timeout_ms
         }))
         .transact()
         .await?;
