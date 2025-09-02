@@ -36,7 +36,7 @@ container_build_command = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 borsh = { version = "1.5.1", features = ["derive", "unstable__schema"] }
-near-sdk = "5.14.0"
+near-sdk = "5.15.1"
 dcap-qvl = { version = "0.3.2", default-features = false, features=["contract", "borsh", "std"] }
 derive_more = { version = "2.0.1", features = [
     "from",
@@ -61,13 +61,14 @@ tracing = "0.1.40"
 getrandom = { version = "0.2.16", features = ["custom"] }
 
 [dev-dependencies]
-near-sdk = { version = "5.14.0", features = ["unit-testing"] }
-near-contract-standards = "5.14.0"
+near-sdk = { version = "5.15.1", features = ["unit-testing"] }
+near-contract-standards = "5.15.1"
 tokio = "1.44.1"
 anyhow = "1.0.97"
 near-workspaces = { version = "0.20.1", features = ["unstable"]}
 near-gas = "0.3.0"
 rand = "0.8.5"
+schemars = "0.8.22" # This version needs to be exactly the same as in `near_sdk::schemars`
 
 [features]
 abi = [
