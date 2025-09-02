@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use near_contract_standards::fungible_token::{metadata::FungibleTokenMetadata, Balance};
 use near_gas::NearGas;
-use near_sdk::{json_types::U128, near, AccountId, NearToken};
+use near_sdk::NearToken;
 use near_workspaces::{
     network::Sandbox, result::ExecutionFinalResult, types::SecretKey, Account, Contract, Worker,
 };
@@ -11,7 +11,7 @@ use solver_registry::{pool::PoolInfo, types::TimestampMs};
 
 use super::constants::*;
 
-type WorkerInfo = solver_registry::types::Worker;
+type WorkerInfo = solver_registry::Worker;
 
 pub const SOLVER_REGISTRY_CONTRACT_WASM: &str =
     "../../target/near/solver_registry/solver_registry.wasm";

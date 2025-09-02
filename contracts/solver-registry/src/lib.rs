@@ -27,7 +27,7 @@ mod admin;
 mod attestation;
 mod events;
 mod ext;
-mod pool;
+pub mod pool;
 mod token_receiver;
 pub mod types;
 mod upgrade;
@@ -38,9 +38,9 @@ const GAS_REGISTER_WORKER_CALLBACK: Gas = Gas::from_tgas(10);
 #[near(serializers = [json, borsh])]
 #[derive(Clone)]
 pub struct Worker {
-    pool_id: u32,
-    checksum: String,
-    compose_hash: String,
+    pub pool_id: u32,
+    pub checksum: String,
+    pub compose_hash: String,
 }
 
 #[near(contract_state)]

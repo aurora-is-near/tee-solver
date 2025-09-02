@@ -4,28 +4,25 @@ use near_sdk::near;
 #[near]
 impl Contract {
     /// Approve a docker compose hash for worker registration
-    pub fn approve_compose_hash(&mut self, compose_hash: DockerComposeHash) {
+    pub fn approve_compose_hash(&mut self, compose_hash: String) {
         self.assert_owner();
 
-        let compose_hash_hex = compose_hash.as_hex();
-        self.approved_compose_hashes
-            .insert(compose_hash_hex.clone());
+        self.approved_compose_hashes.insert(compose_hash.clone());
 
         Event::ComposeHashApproved {
-            compose_hash: &compose_hash_hex,
+            compose_hash: &compose_hash,
         }
         .emit();
     }
 
     /// Remove an approved docker compose hash
-    pub fn remove_compose_hash(&mut self, compose_hash: DockerComposeHash) {
+    pub fn remove_compose_hash(&mut self, compose_hash: String) {
         self.assert_owner();
 
-        let compose_hash_hex = compose_hash.as_hex();
-        self.approved_compose_hashes.remove(&compose_hash_hex);
+        self.approved_compose_hashes.remove(&compose_hash);
 
         Event::ComposeHashRemoved {
-            compose_hash: &compose_hash_hex,
+            compose_hash: &compose_hash,
         }
         .emit();
     }
