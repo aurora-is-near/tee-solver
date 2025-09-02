@@ -1,6 +1,10 @@
 use super::{
-    app_compose::AppCompose, collateral::Collateral, measurements::ExpectedMeasurements,
-    quote::QuoteBytes, report_data::ReportData,
+    app_compose::AppCompose,
+    collateral::Collateral,
+    hash::{LauncherDockerComposeHash, MpcDockerImageHash},
+    measurements::ExpectedMeasurements,
+    quote::QuoteBytes,
+    report_data::ReportData,
 };
 use alloc::{format, string::String};
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -9,7 +13,6 @@ use dcap_qvl::verify::VerifiedReport;
 use derive_more::Constructor;
 use dstack_sdk_types::dstack::{EventLog, TcbInfo};
 use k256::sha2::{Digest as _, Sha384};
-use mpc_primitives::hash::{LauncherDockerComposeHash, MpcDockerImageHash};
 use near_sdk::env::sha256;
 use serde::{Deserialize, Serialize};
 

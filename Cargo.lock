@@ -3368,6 +3368,7 @@ dependencies = [
  "near-gas",
  "near-sdk",
  "near-workspaces",
+ "rand",
  "serde",
  "serde_json",
  "serde_with",
@@ -3375,6 +3376,7 @@ dependencies = [
  "sha3",
  "thiserror 2.0.12",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

@@ -11,7 +11,7 @@ use super::report_data::ReportDataVersion;
 use dstack_sdk_types::dstack::TcbInfo as DstackTcbInfo;
 
 /// TCB info JSON file containing measurement values.
-const TCB_INFO_STRING: &str = include_str!("../assets/tcb_info.json");
+const TCB_INFO_STRING: &str = include_str!("./assets/tcb_info.json");
 
 /// The expected SHA-384 digest for the `local-sgx` event, not the event payload.
 ///
