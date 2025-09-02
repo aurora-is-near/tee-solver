@@ -1,3 +1,5 @@
+extern crate alloc;
+
 use dcap_qvl::{verify, QuoteCollateralV3};
 use hex::{decode, encode};
 use near_sdk::{

@@ -2,7 +2,7 @@ use alloc::string::String;
 use borsh::{BorshDeserialize, BorshSerialize};
 use core::cell::LazyCell;
 use serde::{Deserialize, Serialize};
-use serde_with::{Bytes, serde_as};
+use serde_with::{serde_as, Bytes};
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 use alloc::string::ToString;
