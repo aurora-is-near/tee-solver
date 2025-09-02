@@ -7,33 +7,16 @@ use near_workspaces::{
     network::Sandbox, result::ExecutionFinalResult, types::SecretKey, Account, Contract, Worker,
 };
 use serde_json::json;
-use solver_registry::types::TimestampMs;
+use solver_registry::{pool::PoolInfo, types::TimestampMs};
+
+use super::constants::*;
+
+type WorkerInfo = solver_registry::types::Worker;
 
 pub const SOLVER_REGISTRY_CONTRACT_WASM: &str =
     "../../target/near/solver_registry/solver_registry.wasm";
 pub const MOCK_INTENTS_CONTRACT_WASM: &str = "../../target/near/mock_intents/mock_intents.wasm";
 pub const MOCK_FT_CONTRACT_WASM: &str = "../../target/near/mock_ft/mock_ft.wasm";
-
-use super::constants::*;
-
-#[near(serializers = [json, borsh])]
-#[derive(Clone)]
-pub struct WorkerInfo {
-    pub pool_id: u32,
-    pub checksum: String,
-    pub codehash: String,
-}
-
-#[near(serializers = [json])]
-#[derive(Clone)]
-pub struct PoolInfo {
-    pub token_ids: Vec<AccountId>,
-    pub amounts: Vec<U128>,
-    pub fee: u32,
-    pub shares_total_supply: U128,
-    pub worker_id: Option<AccountId>,
-    pub last_ping_timestamp_ms: TimestampMs,
-}
 
 pub async fn create_account(
     sandbox: &Worker<Sandbox>,
@@ -368,15 +351,15 @@ pub async fn create_liquidity_pool(
     Ok(())
 }
 
-// Helper function to approve codehash
-pub async fn approve_codehash(
+// Helper function to approve compose hash
+pub async fn approve_compose_hash(
     owner: &Account,
     solver_registry: &Contract,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let result = owner
-        .call(solver_registry.id(), "approve_codehash")
+        .call(solver_registry.id(), "approve_compose_hash")
         .args_json(json!({
-            "codehash": CODE_HASH
+            "compose_hash": COMPOSE_HASH
         }))
         .transact()
         .await?;

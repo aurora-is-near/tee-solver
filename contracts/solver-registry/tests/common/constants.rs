@@ -1,4 +1,4 @@
-pub const CODE_HASH: &str = "f68cf65a75ad980289144ef3c096a007fc4583ea6d1f90589757f229dbc6cdab";
+pub const COMPOSE_HASH: &str = "f68cf65a75ad980289144ef3c096a007fc4583ea6d1f90589757f229dbc6cdab";
 
 // Worker Info: Alice
 pub const SECRET_KEY_ALICE: &str = "ed25519:3uHrtHQ6422oAj7WhvDgf9KdewGZLvCLbY6AyDdfkctRkUgyai1yMFn7TGnY2a4zQ8o2a1xQpaPPuaTcjRNaxTqP";

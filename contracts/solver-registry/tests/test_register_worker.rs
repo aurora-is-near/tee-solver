@@ -26,8 +26,8 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
         pool.token_ids, pool.amounts, pool.fee, pool.shares_total_supply
     );
 
-    // Approve codehash
-    approve_codehash(&owner, &solver_registry).await?;
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
 
     // Register worker (Alice)
     println!("Registering worker (Alice)...");
@@ -42,8 +42,8 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
     let worker_info_option = get_worker_info(&solver_registry, &alice).await?;
     let worker_info = worker_info_option.expect("Alice should be registered as a worker");
     println!(
-        "\n [LOG] Worker: {{ checksum: {}, codehash: {}, poolId: {} }}",
-        worker_info.checksum, worker_info.codehash, worker_info.pool_id
+        "\n [LOG] Worker: {{ checksum: {}, compose_hash: {}, pool_id: {} }}",
+        worker_info.checksum, worker_info.compose_hash, worker_info.pool_id
     );
 
     // Create a funder account for token transfers
@@ -92,8 +92,8 @@ async fn test_worker_registration_with_invalid_tee_data() -> Result<(), Box<dyn 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
-    // Approve codehash
-    approve_codehash(&owner, &solver_registry).await?;
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
 
     // Try to register worker with invalid quote hex (empty string)
     println!("Attempting to register worker with invalid quote hex...");
@@ -157,8 +157,8 @@ async fn test_worker_registration_requires_sufficient_deposit(
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
-    // Approve codehash
-    approve_codehash(&owner, &solver_registry).await?;
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
 
     // Try to register worker with insufficient deposit (0 yoctoNEAR)
     println!("Attempting to register worker with insufficient deposit...");
@@ -193,7 +193,7 @@ async fn test_worker_registration_requires_sufficient_deposit(
 #[tokio::test]
 async fn test_worker_registration_without_codehash_approval(
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("Starting test for worker registration without codehash approval...");
+    println!("Starting test for worker registration without compose hash approval...");
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
@@ -203,27 +203,27 @@ async fn test_worker_registration_without_codehash_approval(
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
-    // Try to register worker without approving codehash first
-    println!("Attempting to register worker without codehash approval...");
+    // Try to register worker without approving compose hash first
+    println!("Attempting to register worker without compose hash approval...");
     let result = register_worker_alice(&alice, &solver_registry, 0).await?;
 
-    // Registration should fail without codehash approval
+    // Registration should fail without compose hash approval
     assert!(
         !result.is_success(),
-        "Worker registration should fail without codehash approval"
+        "Worker registration should fail without compose hash approval"
     );
 
     let error = result.into_result().unwrap_err();
     println!("Expected error received: {:?}", error);
 
-    println!("Test passed: Worker registration requires codehash approval");
+    println!("Test passed: Worker registration requires compose hash approval");
 
     Ok(())
 }
 
 #[tokio::test]
-async fn test_approve_codehash_with_non_owner() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Starting test for codehash approval with non-owner...");
+async fn test_approve_compose_hash_with_non_owner() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Starting test for compose hash approval with non-owner...");
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
@@ -233,26 +233,26 @@ async fn test_approve_codehash_with_non_owner() -> Result<(), Box<dyn std::error
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
-    // Try to approve codehash with non-owner (Alice)
-    println!("Attempting to approve codehash with non-owner...");
+    // Try to approve compose hash with non-owner (Alice)
+    println!("Attempting to approve compose hash with non-owner...");
     let result = alice
-        .call(solver_registry.id(), "approve_codehash")
+        .call(solver_registry.id(), "approve_compose_hash")
         .args_json(json!({
-            "codehash": CODE_HASH
+            "compose_hash": COMPOSE_HASH
         }))
         .transact()
         .await?;
 
-    // Codehash approval should fail with non-owner
+    // Compose hash approval should fail with non-owner
     assert!(
         !result.is_success(),
-        "Codehash approval should fail with non-owner"
+        "Compose hash approval should fail with non-owner"
     );
 
     let error = result.into_result().unwrap_err();
     println!("Expected error received: {:?}", error);
 
-    println!("Test passed: Only owner can approve codehash");
+    println!("Test passed: Only owner can approve compose hash");
 
     Ok(())
 }
@@ -269,8 +269,8 @@ async fn test_worker_registration_with_invalid_pool_id() -> Result<(), Box<dyn s
     // Create a liquidity pool (pool_id = 0)
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
-    // Approve codehash
-    approve_codehash(&owner, &solver_registry).await?;
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
 
     // Try to register worker with non-existent pool ID
     println!("Attempting to register worker with non-existent pool ID...");
@@ -315,8 +315,8 @@ async fn test_multiple_pools_worker_registration() -> Result<(), Box<dyn std::er
         .await?;
     assert!(result.is_success(), "Second pool creation should succeed");
 
-    // Approve codehash
-    approve_codehash(&owner, &solver_registry).await?;
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
 
     // Register Alice as worker for pool 0
     println!("Registering Alice as worker for pool 0...");
@@ -377,8 +377,8 @@ async fn test_worker_registration_edge_cases() -> Result<(), Box<dyn std::error:
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
-    // Approve codehash
-    approve_codehash(&owner, &solver_registry).await?;
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
 
     // Test 1: Register with valid pool ID
     println!("Testing registration with valid pool ID...");

@@ -40,7 +40,7 @@ const GAS_REGISTER_WORKER_CALLBACK: Gas = Gas::from_tgas(10);
 pub struct Worker {
     pool_id: u32,
     checksum: String,
-    codehash: String,
+    compose_hash: String,
 }
 
 #[near(contract_state)]
@@ -124,13 +124,11 @@ impl Contract {
         let timestamp_s = block_timestamp() / 1_000_000_000;
 
         // For now, allow all hashes (you can configure this based on your security requirements)
-        let allowed_mpc_docker_image_hashes: Vec<DockerImageHash> = vec![];
-        let allowed_launcher_docker_compose_hashes: Vec<DockerComposeHash> = self
+        let allowed_docker_image_hashes: Vec<DockerImageHash> = vec![];
+        let allowed_docker_compose_hashes: Vec<DockerComposeHash> = self
             .approved_compose_hashes
             .iter()
-            .map(|hash| {
-                DockerComposeHash::try_from_hex(hash).expect("Invalid compose hash")
-            })
+            .map(|hash| DockerComposeHash::try_from_hex(hash).expect("Invalid compose hash"))
             .collect();
 
         // Verify the attestation
@@ -138,18 +136,15 @@ impl Contract {
             attestation.verify(
                 expected_report_data,
                 timestamp_s,
-                &allowed_mpc_docker_image_hashes,
-                &allowed_launcher_docker_compose_hashes,
+                &allowed_docker_image_hashes,
+                &allowed_docker_compose_hashes,
             ),
             "Attestation verification failed"
         );
 
         // Extract docker compose hash from TCB info
         let docker_compose_hash = self
-            .find_approved_launcher_compose_hash(
-                &tcb_info_data,
-                &allowed_launcher_docker_compose_hashes,
-            )
+            .find_approved_launcher_compose_hash(&tcb_info_data, &allowed_docker_compose_hashes)
             .expect("Invalid docker compose hash");
         let docker_compose_hash_hex = docker_compose_hash.as_hex();
         self.assert_approved_compose_hash(&docker_compose_hash_hex);
@@ -177,7 +172,7 @@ impl Contract {
         worker_id: AccountId,
         pool_id: u32,
         public_key: PublicKey,
-        codehash: String,
+        compose_hash: String,
         checksum: String,
         #[callback_result] call_result: Result<(), PromiseError>,
     ) {
@@ -187,7 +182,7 @@ impl Contract {
                 Worker {
                     pool_id,
                     checksum: checksum.clone(),
-                    codehash: codehash.clone(),
+                    compose_hash: compose_hash.clone(),
                 },
             );
 
@@ -201,7 +196,7 @@ impl Contract {
                 worker_id: &worker_id,
                 pool_id: &pool_id,
                 public_key: &public_key,
-                codehash: &codehash,
+                compose_hash: &compose_hash,
                 checksum: &checksum,
             }
             .emit();
@@ -214,7 +209,7 @@ impl Contract {
         let worker = self
             .get_worker(worker_id.clone())
             .expect("Worker not found");
-        self.assert_approved_compose_hash(&worker.codehash);
+        self.assert_approved_compose_hash(&worker.compose_hash);
         let pool = self.pools.get_mut(worker.pool_id).expect("Pool not found");
         let registered_worker_id = pool.worker_id.as_ref().expect("Worker not registered");
         require!(

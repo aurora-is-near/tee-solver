@@ -7,11 +7,11 @@ A secure and verifiable smart contract system for managing worker agents in a Tr
 - **Worker Registration & Verification**
   - Secure registration of worker agents through TEE attestation
   - Verification of remote attestation quotes and collateral
-  - Storage of worker checksums and codehashes
+  - Storage of worker checksums and compose hashes
 
 - **Access Control System**
-  - Method-level access control based on verified worker codehashes
-  - Owner-managed approval system for worker codehashes
+  - Method-level access control based on verified worker compose hashes
+  - Owner-managed approval system for worker compose hashes
   - Protected methods accessible only by verified agents
 
 ## Smart Contract Methods
@@ -34,8 +34,8 @@ pub fn get_worker(account_id: AccountId) -> Worker
 ### Access Control
 
 ```rust
-// Approve a worker codehash (owner only)
-pub fn approve_codehash(codehash: String)
+// Approve a worker compose hash (owner only)
+pub fn approve_compose_hash(compose_hash: DockerComposeHash)
 ```
 
 ## How to Build Locally?
@@ -62,7 +62,7 @@ cargo near deploy <account-id>
 
 - All sensitive methods are protected by worker verification
 - Worker registration requires valid TEE attestation
-- Access control is managed through codehash verification
+- Access control is managed through compose hash verification
 - Owner-only administrative functions
 
 ## Technical Architecture
@@ -70,12 +70,12 @@ cargo near deploy <account-id>
 1. **Worker Registration Flow**
    - TEE generates attestation quote
    - Contract verifies quote authenticity
-   - Worker codehash and checksum are stored
+   - Worker compose hash and checksum are stored
    
 2. **Method Access Control**
-   - Methods check caller's registered codehash
-   - Only approved codehashes can access protected functions
-   - Owner manages approved codehash list
+   - Methods check caller's registered compose hash
+   - Only approved compose hashes can access protected functions
+   - Owner manages approved compose hash list
 
 ## Useful Links
 

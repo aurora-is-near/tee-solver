@@ -20,7 +20,7 @@ pub enum Event<'a> {
         worker_id: &'a AccountId,
         pool_id: &'a u32,
         public_key: &'a PublicKey,
-        codehash: &'a String,
+        compose_hash: &'a String,
         checksum: &'a String,
     },
     CreateLiquidityPool {

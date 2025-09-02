@@ -14,8 +14,8 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
-    // Approve codehash
-    approve_codehash(&owner, &solver_registry).await?;
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
 
     // Register first worker (Alice)
     println!("Registering first worker (Alice)...");
@@ -30,8 +30,8 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
     let worker = alice_worker_option.expect("Alice should be registered as a worker");
     println!(
-        "\n [LOG] First Worker (Alice): {{ checksum: {}, codehash: {}, poolId: {} }}",
-        worker.checksum, worker.codehash, worker.pool_id
+        "\n [LOG] First Worker (Alice): {{ checksum: {}, compose_hash: {}, pool_id: {} }}",
+        worker.checksum, worker.compose_hash, worker.pool_id
     );
 
     // Try to register second worker (Bob) for the same pool - this should fail
@@ -79,8 +79,8 @@ async fn test_worker_ping_functionality() -> Result<(), Box<dyn std::error::Erro
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
-    // Approve codehash
-    approve_codehash(&owner, &solver_registry).await?;
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
 
     // Register worker (Alice)
     println!("Registering worker (Alice)...");
@@ -172,8 +172,8 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
-    // Approve codehash
-    approve_codehash(&owner, &solver_registry).await?;
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
 
     // Register first worker (Alice)
     println!("Registering first worker (Alice)...");
@@ -188,8 +188,8 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
     let worker = alice_worker_option.expect("Alice should be registered as a worker");
     println!(
-        "\n [LOG] First Worker (Alice): {{ checksum: {}, codehash: {}, poolId: {} }}",
-        worker.checksum, worker.codehash, worker.pool_id
+        "\n [LOG] First Worker (Alice): {{ checksum: {}, compose_hash: {}, pool_id: {} }}",
+        worker.checksum, worker.compose_hash, worker.pool_id
     );
 
     // Try to register second worker (Bob) for the same pool - this should fail
@@ -230,8 +230,8 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
     let bob_worker_option = get_worker_info(&solver_registry, &bob).await?;
     let bob_worker = bob_worker_option.expect("Bob should be registered as a worker");
     println!(
-        "\n [LOG] New Worker (Bob): {{ checksum: {}, codehash: {}, poolId: {} }}",
-        bob_worker.checksum, bob_worker.codehash, bob_worker.pool_id
+        "\n [LOG] New Worker (Bob): {{ checksum: {}, compose_hash: {}, pool_id: {} }}",
+        bob_worker.checksum, bob_worker.compose_hash, bob_worker.pool_id
     );
     assert_eq!(bob_worker.pool_id, 0, "Bob should be registered for pool 0");
 
@@ -273,8 +273,8 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging(
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
-    // Approve codehash
-    approve_codehash(&owner, &solver_registry).await?;
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
 
     // Register Alice as the first worker
     println!("Registering Alice as the first worker...");
@@ -289,8 +289,8 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging(
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
     let alice_worker = alice_worker_option.expect("Alice should be registered as a worker");
     println!(
-        "\n [LOG] Alice registered: {{ checksum: {}, codehash: {}, poolId: {} }}",
-        alice_worker.checksum, alice_worker.codehash, alice_worker.pool_id
+        "\n [LOG] Alice registered: {{ checksum: {}, compose_hash: {}, pool_id: {} }}",
+        alice_worker.checksum, alice_worker.compose_hash, alice_worker.pool_id
     );
 
     // Get initial pool state
@@ -428,8 +428,8 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
-    // Approve codehash
-    approve_codehash(&owner, &solver_registry).await?;
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
 
     // Register Alice as the first worker
     println!("Registering Alice as the first worker...");
@@ -444,8 +444,8 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
     let alice_worker = alice_worker_option.expect("Alice should be registered as a worker");
     println!(
-        "\n [LOG] Alice registered: {{ checksum: {}, codehash: {}, poolId: {} }}",
-        alice_worker.checksum, alice_worker.codehash, alice_worker.pool_id
+        "\n [LOG] Alice registered: {{ checksum: {}, compose_hash: {}, pool_id: {} }}",
+        alice_worker.checksum, alice_worker.compose_hash, alice_worker.pool_id
     );
 
     // Get initial pool state
@@ -510,8 +510,8 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
     let bob_worker_option = get_worker_info(&solver_registry, &bob).await?;
     let bob_worker = bob_worker_option.expect("Bob should be registered as a worker");
     println!(
-        "\n [LOG] Bob registered: {{ checksum: {}, codehash: {}, poolId: {} }}",
-        bob_worker.checksum, bob_worker.codehash, bob_worker.pool_id
+        "\n [LOG] Bob registered: {{ checksum: {}, compose_hash: {}, pool_id: {} }}",
+        bob_worker.checksum, bob_worker.compose_hash, bob_worker.pool_id
     );
     assert_eq!(bob_worker.pool_id, 0, "Bob should be registered for pool 0");
 
