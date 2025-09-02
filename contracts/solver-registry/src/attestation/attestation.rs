@@ -1,7 +1,7 @@
 use super::{
     app_compose::AppCompose,
     collateral::Collateral,
-    hash::{LauncherDockerComposeHash, MpcDockerImageHash},
+    hash::{DockerComposeHash, DockerImageHash},
     measurements::ExpectedMeasurements,
     quote::QuoteBytes,
     report_data::ReportData,
@@ -93,8 +93,8 @@ impl Attestation {
         &self,
         expected_report_data: ReportData,
         timestamp_s: u64,
-        allowed_mpc_docker_image_hashes: &[MpcDockerImageHash],
-        allowed_launcher_docker_compose_hashes: &[LauncherDockerComposeHash],
+        allowed_mpc_docker_image_hashes: &[DockerImageHash],
+        allowed_launcher_docker_compose_hashes: &[DockerComposeHash],
     ) -> bool {
         match self {
             Self::Dstack(dstack_attestation) => self.verify_attestation(
@@ -116,8 +116,8 @@ impl Attestation {
         attestation: &DstackAttestation,
         expected_report_data: ReportData,
         timestamp_s: u64,
-        allowed_mpc_docker_image_hashes: &[MpcDockerImageHash],
-        allowed_launcher_docker_compose_hashes: &[LauncherDockerComposeHash],
+        allowed_mpc_docker_image_hashes: &[DockerImageHash],
+        allowed_launcher_docker_compose_hashes: &[DockerComposeHash],
     ) -> bool {
         let expected_measurements = match ExpectedMeasurements::from_embedded_tcb_info() {
             Ok(measurements) => measurements,
@@ -320,7 +320,8 @@ impl Attestation {
         // && app_compose.local_key_provider_enabled
         // && app_compose.allowed_envs.is_empty()
         // && app_compose.no_instance_id
-        // && app_compose.secure_time == Some(true)  // TODO: should we enforce secure_time?
+            // Note: secure_time is true by default
+            && app_compose.secure_time != Some(false)
         // && app_compose.pre_launch_script.is_none()
     }
 
@@ -342,7 +343,7 @@ impl Attestation {
     }
 
     /// Verifies MPC node image hash is in allowed list.
-    fn verify_mpc_hash(&self, tcb_info: &TcbInfo, allowed_hashes: &[MpcDockerImageHash]) -> bool {
+    fn verify_mpc_hash(&self, tcb_info: &TcbInfo, allowed_hashes: &[DockerImageHash]) -> bool {
         let mut mpc_image_hash_events = tcb_info
             .event_log
             .iter()
@@ -360,7 +361,7 @@ impl Attestation {
     fn verify_launcher_compose_hash(
         &self,
         tcb_info: &TcbInfo,
-        allowed_hashes: &[LauncherDockerComposeHash],
+        allowed_hashes: &[DockerComposeHash],
     ) -> bool {
         let app_compose: AppCompose = match serde_json::from_str(&tcb_info.app_compose) {
             Ok(compose) => compose,

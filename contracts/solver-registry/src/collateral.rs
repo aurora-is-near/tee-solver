@@ -1,4 +1,6 @@
 use crate::*;
+use dcap_qvl::QuoteCollateralV3;
+use hex::encode;
 use serde_json::Value;
 use sha2::{Digest as _, Sha256, Sha384};
 

@@ -8,6 +8,6 @@ pub type TimestampMs = u64;
 pub enum Prefix {
     Pools,
     PoolShares,
-    ApprovedCodeHashes,
+    ApprovedComposeHashes,
     WorkerByAccountId,
 }

@@ -3,22 +3,26 @@ use near_sdk::near;
 
 #[near]
 impl Contract {
-    pub fn approve_codehash(&mut self, codehash: String) {
+    pub fn approve_compose_hash(&mut self, compose_hash: DockerComposeHash) {
         self.assert_owner();
-        self.approved_codehashes.insert(codehash.clone());
 
-        Event::CodehashApproved {
-            codehash: &codehash,
+        let compose_hash = compose_hash.as_hex();
+        self.approved_compose_hashes.insert(compose_hash.clone());
+
+        Event::ComposeHashApproved {
+            compose_hash: &compose_hash,
         }
         .emit();
     }
 
-    pub fn remove_codehash(&mut self, codehash: String) {
+    pub fn remove_compose_hash(&mut self, compose_hash: DockerComposeHash) {
         self.assert_owner();
-        self.approved_codehashes.remove(&codehash);
 
-        Event::CodehashRemoved {
-            codehash: &codehash,
+        let compose_hash = compose_hash.as_hex();
+        self.approved_compose_hashes.remove(&compose_hash);
+
+        Event::ComposeHashRemoved {
+            compose_hash: &compose_hash,
         }
         .emit();
     }

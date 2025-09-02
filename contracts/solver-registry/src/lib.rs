@@ -12,7 +12,7 @@ use near_sdk::{
 use std::str::FromStr;
 
 use crate::attestation::collateral::Collateral;
-use crate::attestation::hash::{LauncherDockerComposeHash, MpcDockerImageHash};
+use crate::attestation::hash::{DockerComposeHash, DockerImageHash};
 use crate::attestation::quote::QuoteBytes;
 use crate::attestation::report_data::{ReportData, ReportDataV1};
 use crate::attestation::{
@@ -25,7 +25,6 @@ use crate::types::*;
 
 mod admin;
 mod attestation;
-// mod collateral;
 mod events;
 mod ext;
 mod pool;
@@ -50,7 +49,7 @@ pub struct Contract {
     owner_id: AccountId,
     intents_contract_id: AccountId,
     pools: Vector<Pool>,
-    approved_codehashes: IterableSet<String>,
+    approved_compose_hashes: IterableSet<String>,
     worker_by_account_id: IterableMap<AccountId, Worker>,
     worker_ping_timeout_ms: TimestampMs,
 }
@@ -74,7 +73,7 @@ impl Contract {
             owner_id,
             intents_contract_id,
             pools: Vector::new(Prefix::Pools),
-            approved_codehashes: IterableSet::new(Prefix::ApprovedCodeHashes),
+            approved_compose_hashes: IterableSet::new(Prefix::ApprovedComposeHashes),
             worker_by_account_id: IterableMap::new(Prefix::WorkerByAccountId),
             worker_ping_timeout_ms,
         }
@@ -125,12 +124,12 @@ impl Contract {
         let timestamp_s = block_timestamp() / 1_000_000_000;
 
         // For now, allow all hashes (you can configure this based on your security requirements)
-        let allowed_mpc_docker_image_hashes: Vec<MpcDockerImageHash> = vec![];
-        let allowed_launcher_docker_compose_hashes: Vec<LauncherDockerComposeHash> = self
-            .approved_codehashes
+        let allowed_mpc_docker_image_hashes: Vec<DockerImageHash> = vec![];
+        let allowed_launcher_docker_compose_hashes: Vec<DockerComposeHash> = self
+            .approved_compose_hashes
             .iter()
             .map(|hash| {
-                LauncherDockerComposeHash::try_from_hex(hash).expect("Invalid compose hash")
+                DockerComposeHash::try_from_hex(hash).expect("Invalid compose hash")
             })
             .collect();
 
@@ -153,7 +152,7 @@ impl Contract {
             )
             .expect("Invalid docker compose hash");
         let docker_compose_hash_hex = docker_compose_hash.as_hex();
-        self.assert_approved_codehash(&docker_compose_hash_hex);
+        self.assert_approved_compose_hash(&docker_compose_hash_hex);
 
         // add the public key to the intents vault
         ext_intents_vault::ext(self.get_pool_account_id(pool_id))
@@ -215,7 +214,7 @@ impl Contract {
         let worker = self
             .get_worker(worker_id.clone())
             .expect("Worker not found");
-        self.assert_approved_codehash(&worker.codehash);
+        self.assert_approved_compose_hash(&worker.codehash);
         let pool = self.pools.get_mut(worker.pool_id).expect("Pool not found");
         let registered_worker_id = pool.worker_id.as_ref().expect("Worker not registered");
         require!(
@@ -236,18 +235,18 @@ impl Contract {
 }
 
 impl Contract {
-    fn assert_approved_codehash(&self, codehash: &String) {
+    fn assert_approved_compose_hash(&self, compose_hash: &String) {
         require!(
-            self.approved_codehashes.contains(codehash),
-            "Invalid code hash"
+            self.approved_compose_hashes.contains(compose_hash),
+            "Invalid compose hash"
         );
     }
 
     fn find_approved_launcher_compose_hash(
         &self,
         tcb_info: &TcbInfo,
-        allowed_hashes: &[LauncherDockerComposeHash],
-    ) -> Option<LauncherDockerComposeHash> {
+        allowed_hashes: &[DockerComposeHash],
+    ) -> Option<DockerComposeHash> {
         let app_compose: AppCompose = match serde_json::from_str(&tcb_info.app_compose) {
             Ok(compose) => compose,
             Err(e) => {

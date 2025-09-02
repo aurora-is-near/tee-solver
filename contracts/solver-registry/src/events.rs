@@ -33,11 +33,11 @@ pub enum Event<'a> {
         worker_id: &'a AccountId,
         timestamp_ms: &'a TimestampMs,
     },
-    CodehashApproved {
-        codehash: &'a String,
+    ComposeHashApproved {
+        compose_hash: &'a String,
     },
-    CodehashRemoved {
-        codehash: &'a String,
+    ComposeHashRemoved {
+        compose_hash: &'a String,
     },
     OwnerChanged {
         old_owner_id: &'a AccountId,
