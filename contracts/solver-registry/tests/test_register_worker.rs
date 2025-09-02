@@ -191,7 +191,7 @@ async fn test_worker_registration_requires_sufficient_deposit(
 }
 
 #[tokio::test]
-async fn test_worker_registration_without_codehash_approval(
+async fn test_worker_registration_without_compose_hash_approval(
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker registration without compose hash approval...");
     let sandbox = near_workspaces::sandbox().await?;
