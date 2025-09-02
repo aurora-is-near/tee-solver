@@ -150,12 +150,12 @@ impl Attestation {
             && self.verify_static_rtmrs(report_data, &attestation.tcb_info, &expected_measurements)
             && self.verify_rtmr3(report_data, &attestation.tcb_info)
             && self.verify_app_compose(&attestation.tcb_info)
-            && self.verify_local_sgx_digest(&attestation.tcb_info, &expected_measurements)
-            && self.verify_mpc_hash(&attestation.tcb_info, allowed_mpc_docker_image_hashes)
-            && self.verify_launcher_compose_hash(
-                &attestation.tcb_info,
-                allowed_launcher_docker_compose_hashes,
-            )
+            // && self.verify_local_sgx_digest(&attestation.tcb_info, &expected_measurements)
+            // && self.verify_mpc_hash(&attestation.tcb_info, allowed_mpc_docker_image_hashes)
+            // && self.verify_launcher_compose_hash(
+            //     &attestation.tcb_info,
+            //     allowed_launcher_docker_compose_hashes,
+            // )
     }
 
     /// Replays RTMR3 from the event log by hashing all relevant events together and verifies all

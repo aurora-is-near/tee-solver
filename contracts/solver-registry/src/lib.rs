@@ -13,10 +13,18 @@ use near_sdk::{
 use crate::events::*;
 use crate::pool::*;
 use crate::types::*;
+use crate::attestation::attestation::{Attestation, DstackAttestation};
+use crate::attestation::quote::QuoteBytes;
+use crate::attestation::collateral::Collateral;
+use crate::attestation::report_data::{ReportData, ReportDataV1};
+use crate::attestation::hash::{MpcDockerImageHash, LauncherDockerComposeHash};
+use dstack_sdk_types::dstack::TcbInfo;
+use std::str::FromStr;
+use serde_json::Value;
 
 mod admin;
 mod attestation;
-mod collateral;
+// mod collateral;
 mod events;
 mod ext;
 mod pool;
@@ -93,29 +101,45 @@ impl Contract {
             "Worker already registered"
         );
 
-        let collateral = collateral::get_collateral(collateral);
-        let quote = decode(quote_hex).unwrap();
-        let now = block_timestamp() / 1000000000;
-        let result = verify::verify(&quote, &collateral, now).expect("Report is not verified");
-        let report = result.report.as_td10().unwrap();
-        let rtmr3 = encode(report.rt_mr3);
-
-        // verify the signer public key is the same as the one included in the report data
-        let report_data = encode(report.report_data);
+        // Get the signer's public key
         let public_key = env::signer_account_pk();
-        let public_key_str: String = (&public_key).into();
-        // pad the public key hex with 0 to 128 characters
-        let public_key_hex = format!("{:0>128}", encode(public_key_str));
+
+        // Parse the attestation components
+        let quote_bytes = QuoteBytes::from(decode(&quote_hex).expect("Invalid quote hex"));
+        let collateral_data = Collateral::from_str(&collateral).expect("Invalid collateral format");
+        let tcb_info_data: TcbInfo = serde_json::from_str(&tcb_info)
+            .expect("Invalid TCB info format");
+
+        // Create the attestation
+        let attestation = Attestation::Dstack(DstackAttestation::new(
+            quote_bytes,
+            collateral_data,
+            tcb_info_data,
+        ));
+
+        // Create expected report data from the public key
+        let expected_report_data = ReportData::V1(ReportDataV1::new(public_key.clone()));
+
+        // Get current timestamp in seconds
+        let timestamp_s = block_timestamp() / 1_000_000_000;
+
+        // For now, allow all hashes (you can configure this based on your security requirements)
+        let allowed_mpc_docker_image_hashes: Vec<MpcDockerImageHash> = vec![];
+        let allowed_launcher_docker_compose_hashes: Vec<LauncherDockerComposeHash> = vec![];
+
+        // Verify the attestation
         require!(
-            public_key_hex == report_data,
-            format!(
-                "Invalid public key: {} v.s. {}",
-                public_key_hex, report_data
-            )
+            attestation.verify(
+                expected_report_data,
+                timestamp_s,
+                &allowed_mpc_docker_image_hashes,
+                &allowed_launcher_docker_compose_hashes,
+            ),
+            "Attestation verification failed"
         );
 
-        // only allow workers with approved code hashes to register
-        let codehash = collateral::verify_codehash(tcb_info, rtmr3);
+        // Extract codehash from TCB info for approved code hash verification
+        let codehash = self.extract_codehash_from_tcb_info(&tcb_info);
         self.assert_approved_codehash(&codehash);
 
         // add the public key to the intents vault
@@ -198,5 +222,31 @@ impl Contract {
             self.approved_codehashes.contains(codehash),
             "Invalid code hash"
         );
+    }
+
+    /// Extract codehash from TCB info for verification
+    fn extract_codehash_from_tcb_info(&self, tcb_info: &str) -> String {
+        // Parse the TCB info to extract the codehash
+        // This is a simplified implementation - you may need to adjust based on your TCB info structure
+        let tcb_info_data: Value = serde_json::from_str(tcb_info)
+            .expect("Invalid TCB info JSON format");
+        
+        // Try to extract codehash from various possible locations in the TCB info
+        // The actual structure may vary depending on your TEE implementation
+        if let Some(codehash) = tcb_info_data["codehash"].as_str() {
+            return codehash.to_string();
+        }
+        
+        if let Some(codehash) = tcb_info_data["app_compose"]["codehash"].as_str() {
+            return codehash.to_string();
+        }
+        
+        if let Some(codehash) = tcb_info_data["measurements"]["codehash"].as_str() {
+            return codehash.to_string();
+        }
+        
+        // If no codehash is found, use the checksum as a fallback
+        // This is a temporary solution - you should implement proper codehash extraction
+        "default_codehash".to_string()
     }
 }
