@@ -144,7 +144,7 @@ impl Contract {
 
         // Extract docker compose hash from TCB info
         let docker_compose_hash = self
-            .find_approved_launcher_compose_hash(&tcb_info_data, &allowed_docker_compose_hashes)
+            .find_approved_compose_hash(&tcb_info_data, &allowed_docker_compose_hashes)
             .expect("Invalid docker compose hash");
         let docker_compose_hash_hex = docker_compose_hash.as_hex();
         self.assert_approved_compose_hash(&docker_compose_hash_hex);
@@ -237,7 +237,7 @@ impl Contract {
         );
     }
 
-    fn find_approved_launcher_compose_hash(
+    fn find_approved_compose_hash(
         &self,
         tcb_info: &TcbInfo,
         allowed_hashes: &[DockerComposeHash],
@@ -249,10 +249,10 @@ impl Contract {
                 return None;
             }
         };
-        let launcher_bytes = sha256(app_compose.docker_compose_file.as_bytes());
+        let compose_hash = sha256(app_compose.docker_compose_file.as_bytes());
         allowed_hashes
             .iter()
-            .find(|hash| hash.as_hex() == hex::encode(&launcher_bytes))
+            .find(|hash| hash.as_hex() == hex::encode(&compose_hash))
             .cloned()
     }
 }
