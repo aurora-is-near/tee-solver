@@ -7,7 +7,7 @@ use serde_with::{serde_as, Bytes};
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 use alloc::string::ToString;
 
-use crate::report_data::ReportDataVersion;
+use super::report_data::ReportDataVersion;
 use dstack_sdk_types::dstack::TcbInfo as DstackTcbInfo;
 
 /// TCB info JSON file containing measurement values.
