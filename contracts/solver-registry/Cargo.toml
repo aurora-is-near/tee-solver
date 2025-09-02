@@ -68,3 +68,10 @@ anyhow = "1.0.97"
 near-workspaces = { version = "0.20.1", features = ["unstable"]}
 near-gas = "0.3.0"
 rand = "0.8.5"
+
+[features]
+abi = [
+    "borsh/unstable__schema",
+    "dcap-qvl/borsh_schema",
+    "dstack-sdk-types/borsh_schema",
+]
