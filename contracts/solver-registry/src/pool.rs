@@ -94,7 +94,7 @@ impl Contract {
 
         // Create sub account for managing liquidity pool's assets in NEAR Intents
         let pool_account_id = self.get_pool_account_id(pool_id);
-        Promise::new(pool_account_id.clone())
+        Promise::new(pool_account_id)
             .create_account()
             .transfer(CREATE_POOL_STORAGE_DEPOSIT)
             .deploy_contract(include_bytes!("../../intents-vault/res/intents_vault.wasm").to_vec())
