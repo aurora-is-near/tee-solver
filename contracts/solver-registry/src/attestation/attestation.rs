@@ -317,11 +317,11 @@ impl Attestation {
             // && app_compose.gateway_enabled == Some(false)
             && app_compose.public_logs
             && app_compose.public_sysinfo
-            // && app_compose.local_key_provider_enabled
-            // && app_compose.allowed_envs.is_empty()
-            // && app_compose.no_instance_id
-            // && app_compose.secure_time == Some(true)  // TODO: should we enforce secure_time?
-            // && app_compose.pre_launch_script.is_none()
+        // && app_compose.local_key_provider_enabled
+        // && app_compose.allowed_envs.is_empty()
+        // && app_compose.no_instance_id
+        // && app_compose.secure_time == Some(true)  // TODO: should we enforce secure_time?
+        // && app_compose.pre_launch_script.is_none()
     }
 
     /// Verifies local key-provider event digest matches the expected digest.

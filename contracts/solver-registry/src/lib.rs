@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use dstack_sdk_types::dstack::TcbInfo;
 use hex::decode;
 use near_sdk::{
     assert_one_yocto,
@@ -8,18 +9,19 @@ use near_sdk::{
     store::{IterableMap, IterableSet, Vector},
     AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseError, PublicKey,
 };
-use dstack_sdk_types::dstack::TcbInfo;
 use std::str::FromStr;
 
-use crate::attestation::{app_compose::AppCompose, attestation::{Attestation, DstackAttestation}};
 use crate::attestation::collateral::Collateral;
 use crate::attestation::hash::{LauncherDockerComposeHash, MpcDockerImageHash};
 use crate::attestation::quote::QuoteBytes;
 use crate::attestation::report_data::{ReportData, ReportDataV1};
+use crate::attestation::{
+    app_compose::AppCompose,
+    attestation::{Attestation, DstackAttestation},
+};
 use crate::events::*;
 use crate::pool::*;
 use crate::types::*;
-
 
 mod admin;
 mod attestation;
@@ -124,7 +126,13 @@ impl Contract {
 
         // For now, allow all hashes (you can configure this based on your security requirements)
         let allowed_mpc_docker_image_hashes: Vec<MpcDockerImageHash> = vec![];
-        let allowed_launcher_docker_compose_hashes: Vec<LauncherDockerComposeHash> = self.approved_codehashes.iter().map(|hash| LauncherDockerComposeHash::try_from_hex(hash).expect("Invalid compose hash")).collect();
+        let allowed_launcher_docker_compose_hashes: Vec<LauncherDockerComposeHash> = self
+            .approved_codehashes
+            .iter()
+            .map(|hash| {
+                LauncherDockerComposeHash::try_from_hex(hash).expect("Invalid compose hash")
+            })
+            .collect();
 
         // Verify the attestation
         require!(
@@ -138,7 +146,12 @@ impl Contract {
         );
 
         // Extract docker compose hash from TCB info
-        let docker_compose_hash = self.find_approved_launcher_compose_hash(&tcb_info_data, &allowed_launcher_docker_compose_hashes).expect("Invalid docker compose hash");
+        let docker_compose_hash = self
+            .find_approved_launcher_compose_hash(
+                &tcb_info_data,
+                &allowed_launcher_docker_compose_hashes,
+            )
+            .expect("Invalid docker compose hash");
         let docker_compose_hash_hex = docker_compose_hash.as_hex();
         self.assert_approved_codehash(&docker_compose_hash_hex);
 
@@ -149,7 +162,13 @@ impl Contract {
             .then(
                 Self::ext(env::current_account_id())
                     .with_static_gas(GAS_REGISTER_WORKER_CALLBACK)
-                    .on_worker_key_added(worker_id, pool_id, public_key, docker_compose_hash_hex, checksum),
+                    .on_worker_key_added(
+                        worker_id,
+                        pool_id,
+                        public_key,
+                        docker_compose_hash_hex,
+                        checksum,
+                    ),
             )
     }
 
