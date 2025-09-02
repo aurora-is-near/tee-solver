@@ -36,9 +36,6 @@ pub fn get_worker(account_id: AccountId) -> Worker
 ```rust
 // Approve a worker codehash (owner only)
 pub fn approve_codehash(codehash: String)
-
-// Check if caller has approved codehash
-pub fn require_approved_codehash()
 ```
 
 ## How to Build Locally?

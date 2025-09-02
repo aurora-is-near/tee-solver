@@ -137,9 +137,10 @@ impl Contract {
             "Attestation verification failed"
         );
 
-        // Extract codehash from TCB info for approved code hash verification
+        // Extract docker compose hash from TCB info
         let docker_compose_hash = self.find_approved_launcher_compose_hash(&tcb_info_data, &allowed_launcher_docker_compose_hashes).expect("Invalid docker compose hash");
         let docker_compose_hash_hex = docker_compose_hash.as_hex();
+        self.assert_approved_codehash(&docker_compose_hash_hex);
 
         // add the public key to the intents vault
         ext_intents_vault::ext(self.get_pool_account_id(pool_id))

@@ -8,7 +8,7 @@ use common::constants::*;
 use common::utils::*;
 
 #[tokio::test]
-async fn test_register_worker() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test...");
     let sandbox = near_workspaces::sandbox().await?;
 
