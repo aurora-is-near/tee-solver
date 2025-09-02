@@ -1,26 +1,25 @@
 extern crate alloc;
 
-use dcap_qvl::{verify, QuoteCollateralV3};
-use hex::{decode, encode};
+use hex::decode;
 use near_sdk::{
     assert_one_yocto,
-    env::{self, block_timestamp, block_timestamp_ms},
+    env::{self, block_timestamp, block_timestamp_ms, sha256},
     ext_contract, near, require,
     store::{IterableMap, IterableSet, Vector},
     AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseError, PublicKey,
 };
+use dstack_sdk_types::dstack::TcbInfo;
+use std::str::FromStr;
 
+use crate::attestation::{app_compose::AppCompose, attestation::{Attestation, DstackAttestation}};
+use crate::attestation::collateral::Collateral;
+use crate::attestation::hash::{LauncherDockerComposeHash, MpcDockerImageHash};
+use crate::attestation::quote::QuoteBytes;
+use crate::attestation::report_data::{ReportData, ReportDataV1};
 use crate::events::*;
 use crate::pool::*;
 use crate::types::*;
-use crate::attestation::attestation::{Attestation, DstackAttestation};
-use crate::attestation::quote::QuoteBytes;
-use crate::attestation::collateral::Collateral;
-use crate::attestation::report_data::{ReportData, ReportDataV1};
-use crate::attestation::hash::{MpcDockerImageHash, LauncherDockerComposeHash};
-use dstack_sdk_types::dstack::TcbInfo;
-use std::str::FromStr;
-use serde_json::Value;
+
 
 mod admin;
 mod attestation;
@@ -107,14 +106,14 @@ impl Contract {
         // Parse the attestation components
         let quote_bytes = QuoteBytes::from(decode(&quote_hex).expect("Invalid quote hex"));
         let collateral_data = Collateral::from_str(&collateral).expect("Invalid collateral format");
-        let tcb_info_data: TcbInfo = serde_json::from_str(&tcb_info)
-            .expect("Invalid TCB info format");
+        let tcb_info_data: TcbInfo =
+            serde_json::from_str(&tcb_info).expect("Invalid TCB info format");
 
         // Create the attestation
         let attestation = Attestation::Dstack(DstackAttestation::new(
             quote_bytes,
             collateral_data,
-            tcb_info_data,
+            tcb_info_data.clone(),
         ));
 
         // Create expected report data from the public key
@@ -125,7 +124,7 @@ impl Contract {
 
         // For now, allow all hashes (you can configure this based on your security requirements)
         let allowed_mpc_docker_image_hashes: Vec<MpcDockerImageHash> = vec![];
-        let allowed_launcher_docker_compose_hashes: Vec<LauncherDockerComposeHash> = vec![];
+        let allowed_launcher_docker_compose_hashes: Vec<LauncherDockerComposeHash> = self.approved_codehashes.iter().map(|hash| LauncherDockerComposeHash::try_from_hex(hash).expect("Invalid compose hash")).collect();
 
         // Verify the attestation
         require!(
@@ -139,8 +138,8 @@ impl Contract {
         );
 
         // Extract codehash from TCB info for approved code hash verification
-        let codehash = self.extract_codehash_from_tcb_info(&tcb_info);
-        self.assert_approved_codehash(&codehash);
+        let docker_compose_hash = self.find_approved_launcher_compose_hash(&tcb_info_data, &allowed_launcher_docker_compose_hashes).expect("Invalid docker compose hash");
+        let docker_compose_hash_hex = docker_compose_hash.as_hex();
 
         // add the public key to the intents vault
         ext_intents_vault::ext(self.get_pool_account_id(pool_id))
@@ -149,7 +148,7 @@ impl Contract {
             .then(
                 Self::ext(env::current_account_id())
                     .with_static_gas(GAS_REGISTER_WORKER_CALLBACK)
-                    .on_worker_key_added(worker_id, pool_id, public_key, codehash, checksum),
+                    .on_worker_key_added(worker_id, pool_id, public_key, docker_compose_hash_hex, checksum),
             )
     }
 
@@ -224,29 +223,22 @@ impl Contract {
         );
     }
 
-    /// Extract codehash from TCB info for verification
-    fn extract_codehash_from_tcb_info(&self, tcb_info: &str) -> String {
-        // Parse the TCB info to extract the codehash
-        // This is a simplified implementation - you may need to adjust based on your TCB info structure
-        let tcb_info_data: Value = serde_json::from_str(tcb_info)
-            .expect("Invalid TCB info JSON format");
-        
-        // Try to extract codehash from various possible locations in the TCB info
-        // The actual structure may vary depending on your TEE implementation
-        if let Some(codehash) = tcb_info_data["codehash"].as_str() {
-            return codehash.to_string();
-        }
-        
-        if let Some(codehash) = tcb_info_data["app_compose"]["codehash"].as_str() {
-            return codehash.to_string();
-        }
-        
-        if let Some(codehash) = tcb_info_data["measurements"]["codehash"].as_str() {
-            return codehash.to_string();
-        }
-        
-        // If no codehash is found, use the checksum as a fallback
-        // This is a temporary solution - you should implement proper codehash extraction
-        "default_codehash".to_string()
+    fn find_approved_launcher_compose_hash(
+        &self,
+        tcb_info: &TcbInfo,
+        allowed_hashes: &[LauncherDockerComposeHash],
+    ) -> Option<LauncherDockerComposeHash> {
+        let app_compose: AppCompose = match serde_json::from_str(&tcb_info.app_compose) {
+            Ok(compose) => compose,
+            Err(e) => {
+                tracing::error!("Failed to parse app_compose JSON: {:?}", e);
+                return None;
+            }
+        };
+        let launcher_bytes = sha256(app_compose.docker_compose_file.as_bytes());
+        allowed_hashes
+            .iter()
+            .find(|hash| hash.as_hex() == hex::encode(&launcher_bytes))
+            .cloned()
     }
 }

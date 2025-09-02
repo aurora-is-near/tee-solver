@@ -150,12 +150,14 @@ impl Attestation {
             && self.verify_static_rtmrs(report_data, &attestation.tcb_info, &expected_measurements)
             && self.verify_rtmr3(report_data, &attestation.tcb_info)
             && self.verify_app_compose(&attestation.tcb_info)
+            // Note: skip local key provider since KMS is enabled
             // && self.verify_local_sgx_digest(&attestation.tcb_info, &expected_measurements)
+            // Note: skip MPC hash since we don't emit the docker image hash event in solver
             // && self.verify_mpc_hash(&attestation.tcb_info, allowed_mpc_docker_image_hashes)
-            // && self.verify_launcher_compose_hash(
-            //     &attestation.tcb_info,
-            //     allowed_launcher_docker_compose_hashes,
-            // )
+            && self.verify_launcher_compose_hash(
+                &attestation.tcb_info,
+                allowed_launcher_docker_compose_hashes,
+            )
     }
 
     /// Replays RTMR3 from the event log by hashing all relevant events together and verifies all
@@ -307,18 +309,19 @@ impl Attestation {
 
     /// Validates app compose configuration against expected security requirements.
     fn validate_app_compose_config(app_compose: &AppCompose) -> bool {
+        // Note: The commented configs are different in Phala Cloud. Ignore for now.
         app_compose.manifest_version == 2
             && app_compose.runner == "docker-compose"
-            && !app_compose.kms_enabled
-            && app_compose.gateway_enabled == Some(false)
+            // Note: require KMS enabled with dstack v0.5+ in Phala Cloud
+            && app_compose.kms_enabled
+            // && app_compose.gateway_enabled == Some(false)
             && app_compose.public_logs
             && app_compose.public_sysinfo
-            && app_compose.local_key_provider_enabled
-            && app_compose.allowed_envs.is_empty()
-            && app_compose.no_instance_id
-            && app_compose.secure_time == Some(true)
-            && app_compose.secure_time == Some(true)
-            && app_compose.pre_launch_script.is_none()
+            // && app_compose.local_key_provider_enabled
+            // && app_compose.allowed_envs.is_empty()
+            // && app_compose.no_instance_id
+            // && app_compose.secure_time == Some(true)  // TODO: should we enforce secure_time?
+            // && app_compose.pre_launch_script.is_none()
     }
 
     /// Verifies local key-provider event digest matches the expected digest.
