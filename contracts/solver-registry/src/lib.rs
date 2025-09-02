@@ -13,6 +13,7 @@ use crate::pool::*;
 use crate::types::*;
 
 mod admin;
+mod attestation;
 mod collateral;
 mod events;
 mod ext;
