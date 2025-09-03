@@ -82,7 +82,7 @@ impl Contract {
     /// Register worker with TEE attestation. The worker needs to running inside a CVM with one of the approved docker compose hashes.
     ///
     /// The current TEE attestation module reuses the implementation from [NEAR MPC](https://github.com/near/mpc) TEE attestation with slight change.
-    /// Find more details about TEE attestation module in `attestation/mod.rs`.
+    /// Find more details about TEE attestation module in `attestation/README.md`.
     #[payable]
     pub fn register_worker(
         &mut self,
