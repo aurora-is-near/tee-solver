@@ -35,7 +35,10 @@ pub fn get_worker(account_id: AccountId) -> Worker
 
 ```rust
 // Approve a worker compose hash (owner only)
-pub fn approve_compose_hash(compose_hash: DockerComposeHash)
+pub fn approve_compose_hash(compose_hash: String)
+
+// Remove a worker compose hash (owner only)
+pub fn remove_compose_hash(compose_hash: String)
 ```
 
 ## How to Build Locally?

@@ -11,13 +11,13 @@ use near_sdk::{
 };
 use std::str::FromStr;
 
-use crate::attestation::collateral::Collateral;
-use crate::attestation::hash::{DockerComposeHash, DockerImageHash};
-use crate::attestation::quote::QuoteBytes;
-use crate::attestation::report_data::{ReportData, ReportDataV1};
 use crate::attestation::{
     app_compose::AppCompose,
     attestation::{Attestation, DstackAttestation},
+    collateral::Collateral,
+    hash::{DockerComposeHash, DockerImageHash},
+    quote::QuoteBytes,
+    report_data::ReportData,
 };
 use crate::events::*;
 use crate::pool::*;
@@ -79,6 +79,10 @@ impl Contract {
         }
     }
 
+    /// Register worker with TEE attestation. The worker needs to running inside a CVM with one of the approved docker compose hashes.
+    ///
+    /// The current TEE attestation module reuses the implementation from [NEAR MPC](https://github.com/near/mpc) TEE attestation with slight change.
+    /// Find more details about TEE attestation module in `attestation/mod.rs`.
     #[payable]
     pub fn register_worker(
         &mut self,
@@ -90,8 +94,9 @@ impl Contract {
     ) -> Promise {
         assert_one_yocto();
         let pool = self.pools.get(pool_id).expect("Pool not found");
+
+        // Register new worker is allowed only if there's no active worker and the worker is not already registered
         let worker_id = env::predecessor_account_id();
-        // register new worker is allowed only if there's no active worker and the worker is not already registered
         require!(
             !pool.has_active_worker(self.worker_ping_timeout_ms),
             "Only one active worker is allowed per pool"
@@ -100,9 +105,6 @@ impl Contract {
             pool.worker_id.is_none() || pool.worker_id.as_ref().unwrap() != &worker_id,
             "Worker already registered"
         );
-
-        // Get the signer's public key
-        let public_key = env::signer_account_pk();
 
         // Parse the attestation components
         let quote_bytes = QuoteBytes::from(decode(&quote_hex).expect("Invalid quote hex"));
@@ -117,13 +119,15 @@ impl Contract {
             tcb_info_data.clone(),
         ));
 
+        // Get the signer's public key
+        let public_key = env::signer_account_pk();
         // Create expected report data from the public key
-        let expected_report_data = ReportData::V1(ReportDataV1::new(public_key.clone()));
+        let expected_report_data = ReportData::new(public_key.clone());
 
         // Get current timestamp in seconds
         let timestamp_s = block_timestamp() / 1_000_000_000;
 
-        // For now, allow all hashes (you can configure this based on your security requirements)
+        // For now, allow all docker image hashes as we only verify the docker compose hash
         let allowed_docker_image_hashes: Vec<DockerImageHash> = vec![];
         let allowed_docker_compose_hashes: Vec<DockerComposeHash> = self
             .approved_compose_hashes
@@ -147,9 +151,8 @@ impl Contract {
             .find_approved_compose_hash(&tcb_info_data, &allowed_docker_compose_hashes)
             .expect("Invalid docker compose hash");
         let docker_compose_hash_hex = docker_compose_hash.as_hex();
-        self.assert_approved_compose_hash(&docker_compose_hash_hex);
 
-        // add the public key to the intents vault
+        // Add the public key to the intents vault
         ext_intents_vault::ext(self.get_pool_account_id(pool_id))
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .add_public_key(self.intents_contract_id.clone(), public_key.clone())
