@@ -6,6 +6,7 @@ impl Contract {
     /// Approve a docker compose hash for worker registration
     pub fn approve_compose_hash(&mut self, compose_hash: String) {
         self.assert_owner();
+        DockerComposeHash::try_from_hex(compose_hash.clone()).expect("Invalid compose hash");
 
         self.approved_compose_hashes.insert(compose_hash.clone());
 
@@ -18,8 +19,12 @@ impl Contract {
     /// Remove an approved docker compose hash
     pub fn remove_compose_hash(&mut self, compose_hash: String) {
         self.assert_owner();
+        DockerComposeHash::try_from_hex(compose_hash.clone()).expect("Invalid compose hash");
 
-        self.approved_compose_hashes.remove(&compose_hash);
+        require!(
+            self.approved_compose_hashes.remove(&compose_hash),
+            "Compose hash not found"
+        );
 
         Event::ComposeHashRemoved {
             compose_hash: &compose_hash,

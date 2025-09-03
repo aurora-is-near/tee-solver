@@ -116,7 +116,7 @@ impl Attestation {
         attestation: &DstackAttestation,
         expected_report_data: ReportData,
         timestamp_s: u64,
-        allowed_mpc_docker_image_hashes: &[DockerImageHash],
+        _allowed_mpc_docker_image_hashes: &[DockerImageHash],
         allowed_launcher_docker_compose_hashes: &[DockerComposeHash],
     ) -> bool {
         let expected_measurements = match ExpectedMeasurements::from_embedded_tcb_info() {
@@ -151,9 +151,9 @@ impl Attestation {
             && self.verify_rtmr3(report_data, &attestation.tcb_info)
             && self.verify_app_compose(&attestation.tcb_info)
             // Note: skip local key provider since KMS is enabled
-            // && self.verify_local_sgx_digest(&attestation.tcb_info, &expected_measurements)
+            // && self._verify_local_sgx_digest(&attestation.tcb_info, &expected_measurements)
             // Note: skip MPC hash since we don't emit the docker image hash event in solver
-            // && self.verify_mpc_hash(&attestation.tcb_info, allowed_mpc_docker_image_hashes)
+            // && self._verify_mpc_hash(&attestation.tcb_info, allowed_mpc_docker_image_hashes)
             && self.verify_launcher_compose_hash(
                 &attestation.tcb_info,
                 allowed_launcher_docker_compose_hashes,
@@ -326,7 +326,7 @@ impl Attestation {
     }
 
     /// Verifies local key-provider event digest matches the expected digest.
-    fn verify_local_sgx_digest(
+    fn _verify_local_sgx_digest(
         &self,
         tcb_info: &TcbInfo,
         expected_measurements: &ExpectedMeasurements,
@@ -343,7 +343,7 @@ impl Attestation {
     }
 
     /// Verifies MPC node image hash is in allowed list.
-    fn verify_mpc_hash(&self, tcb_info: &TcbInfo, allowed_hashes: &[DockerImageHash]) -> bool {
+    fn _verify_mpc_hash(&self, tcb_info: &TcbInfo, allowed_hashes: &[DockerImageHash]) -> bool {
         let mut mpc_image_hash_events = tcb_info
             .event_log
             .iter()
