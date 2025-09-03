@@ -128,7 +128,7 @@ impl ReportData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::report_data::ReportData;
+    use crate::attestation::report_data::ReportData;
     // use alloc::vec::Vec;
     // use dcap_qvl::quote::Quote;
     use near_sdk::PublicKey;

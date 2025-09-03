@@ -46,7 +46,7 @@ impl Contract {
 }
 
 impl Contract {
-    pub(crate) fn assert_owner(&mut self) {
+    pub(crate) fn assert_owner(&self) {
         require!(env::predecessor_account_id() == self.owner_id);
     }
 }
