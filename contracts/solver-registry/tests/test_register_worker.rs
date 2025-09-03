@@ -117,28 +117,6 @@ async fn test_worker_registration_with_invalid_tee_data() -> Result<(), Box<dyn 
     let error = result.into_result().unwrap_err();
     println!("Expected error received: {:?}", error);
 
-    // TODO: invalid checksum doesn't fail in the current implemenation
-    // // Try to register worker with invalid checksum
-    // println!("Attempting to register worker with invalid checksum...");
-    // let result = register_worker(
-    //     &alice,
-    //     &solver_registry,
-    //     0,
-    //     QUOTE_HEX_ALICE,
-    //     QUOTE_COLLATERAL_ALICE,
-    //     "invalid_checksum", // Invalid checksum
-    //     TCB_INFO_ALICE,
-    // ).await?;
-
-    // // Registration should fail with invalid checksum
-    // assert!(
-    //     !result.is_success(),
-    //     "Worker registration should fail with invalid checksum"
-    // );
-
-    // let error = result.into_result().unwrap_err();
-    // println!("Expected error received: {:?}", error);
-
     println!("Test passed: Worker registration properly validates TEE data");
 
     Ok(())
