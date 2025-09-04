@@ -23,6 +23,13 @@ pub enum Event<'a> {
         compose_hash: &'a String,
         checksum: &'a String,
     },
+    WorkerRemoved {
+        worker_id: &'a AccountId,
+        pool_id: &'a u32,
+        public_key: &'a PublicKey,
+        compose_hash: &'a String,
+        checksum: &'a String,
+    },
     CreateLiquidityPool {
         pool_id: &'a u32,
         token_ids: &'a Vec<AccountId>,

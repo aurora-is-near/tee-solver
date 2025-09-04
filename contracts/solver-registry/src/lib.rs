@@ -5,7 +5,7 @@ use hex::decode;
 use near_sdk::{
     assert_one_yocto,
     env::{self, block_timestamp, block_timestamp_ms, sha256},
-    ext_contract, near, require,
+    near, require,
     store::{IterableMap, IterableSet, Vector},
     AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseError, PublicKey,
 };
@@ -20,6 +20,7 @@ use crate::attestation::{
     report_data::ReportData,
 };
 use crate::events::*;
+use crate::ext::*;
 use crate::pool::*;
 use crate::types::*;
 
@@ -41,6 +42,7 @@ pub struct Worker {
     pub pool_id: u32,
     pub checksum: String,
     pub compose_hash: String,
+    pub public_key: PublicKey,
 }
 
 #[near(contract_state)]
@@ -52,12 +54,6 @@ pub struct Contract {
     approved_compose_hashes: IterableSet<String>,
     worker_by_account_id: IterableMap<AccountId, Worker>,
     worker_ping_timeout_ms: TimestampMs,
-}
-
-#[allow(dead_code)]
-#[ext_contract(ext_intents_vault)]
-trait IntentsVaultContract {
-    fn add_public_key(intents_contract_id: AccountId, public_key: PublicKey);
 }
 
 #[near]
@@ -152,21 +148,79 @@ impl Contract {
             .expect("Invalid docker compose hash");
         let docker_compose_hash_hex = docker_compose_hash.as_hex();
 
-        // Add the public key to the intents vault
-        ext_intents_vault::ext(self.get_pool_account_id(pool_id))
-            .with_attached_deposit(NearToken::from_yoctonear(1))
-            .add_public_key(self.intents_contract_id.clone(), public_key.clone())
-            .then(
-                Self::ext(env::current_account_id())
-                    .with_static_gas(GAS_REGISTER_WORKER_CALLBACK)
-                    .on_worker_key_added(
-                        worker_id,
-                        pool_id,
-                        public_key,
-                        docker_compose_hash_hex,
-                        checksum,
-                    ),
+        // Remove the public key of the previous worker if exists
+        if pool.worker_id.is_some() {
+            let previous_worker_id = pool.worker_id.as_ref().expect("Pool has no worker");
+            let previous_worker = self
+                .worker_by_account_id
+                .get(previous_worker_id)
+                .expect("Worker not registered");
+            ext_intents_vault::ext(self.get_pool_account_id(pool_id))
+                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .remove_public_key(
+                    self.intents_contract_id.clone(),
+                    previous_worker.public_key.clone(),
+                )
+                .then(
+                    Self::ext(env::current_account_id())
+                        .with_static_gas(GAS_REGISTER_WORKER_CALLBACK)
+                        .on_previous_worker_key_removed(
+                            worker_id,
+                            pool_id,
+                            public_key,
+                            docker_compose_hash_hex,
+                            checksum,
+                        ),
+                )
+        } else {
+            self.register_new_public_key(
+                worker_id,
+                pool_id,
+                public_key,
+                docker_compose_hash_hex,
+                checksum,
             )
+        }
+    }
+
+    #[private]
+    pub fn on_previous_worker_key_removed(
+        &mut self,
+        worker_id: AccountId,
+        pool_id: u32,
+        public_key: PublicKey,
+        docker_compose_hash_hex: String,
+        checksum: String,
+        #[callback_result] call_result: Result<(), PromiseError>,
+    ) -> Promise {
+        if call_result.is_ok() {
+            // remove previous worker
+            let pool = self.pools.get(pool_id).expect("Pool not found");
+            let previous_worker_id = pool.worker_id.as_ref().expect("Pool has no worker");
+            let previous_worker = self
+                .worker_by_account_id
+                .remove(previous_worker_id)
+                .expect("Worker not registered");
+            Event::WorkerRemoved {
+                worker_id: previous_worker_id,
+                pool_id: &pool_id,
+                public_key: &previous_worker.public_key,
+                compose_hash: &previous_worker.compose_hash,
+                checksum: &previous_worker.checksum,
+            }
+            .emit();
+
+            // register new worker and its key
+            self.register_new_public_key(
+                worker_id,
+                pool_id,
+                public_key,
+                docker_compose_hash_hex,
+                checksum,
+            )
+        } else {
+            env::panic_str("Failed to remove previous worker key");
+        }
     }
 
     #[private]
@@ -186,6 +240,7 @@ impl Contract {
                     pool_id,
                     checksum: checksum.clone(),
                     compose_hash: compose_hash.clone(),
+                    public_key: public_key.clone(),
                 },
             );
 
@@ -213,6 +268,7 @@ impl Contract {
             .get_worker(worker_id.clone())
             .expect("Worker not found");
         self.assert_approved_compose_hash(&worker.compose_hash);
+
         let pool = self.pools.get_mut(worker.pool_id).expect("Pool not found");
         let registered_worker_id = pool.worker_id.as_ref().expect("Worker not registered");
         require!(
@@ -257,5 +313,30 @@ impl Contract {
             .iter()
             .find(|hash| hash.as_hex() == hex::encode(&compose_hash))
             .cloned()
+    }
+
+    fn register_new_public_key(
+        &mut self,
+        worker_id: AccountId,
+        pool_id: u32,
+        public_key: PublicKey,
+        docker_compose_hash_hex: String,
+        checksum: String,
+    ) -> Promise {
+        // Add the public key to the intents vault
+        ext_intents_vault::ext(self.get_pool_account_id(pool_id))
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .add_public_key(self.intents_contract_id.clone(), public_key.clone())
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(GAS_REGISTER_WORKER_CALLBACK)
+                    .on_worker_key_added(
+                        worker_id,
+                        pool_id,
+                        public_key,
+                        docker_compose_hash_hex,
+                        checksum,
+                    ),
+            )
     }
 }

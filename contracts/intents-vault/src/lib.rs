@@ -6,6 +6,7 @@ use near_sdk::{
 #[ext_contract(ext_intents)]
 trait IntentsContract {
     fn add_public_key(public_key: PublicKey);
+    fn remove_public_key(public_key: PublicKey);
 }
 
 #[derive(Default)]
@@ -27,6 +28,20 @@ impl Contract {
         ext_intents::ext(intents_contract_id)
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .add_public_key(public_key)
+    }
+
+    #[payable]
+    pub fn remove_public_key(
+        &mut self,
+        intents_contract_id: AccountId,
+        public_key: PublicKey,
+    ) -> Promise {
+        assert_one_yocto();
+        self.require_parent_account();
+
+        ext_intents::ext(intents_contract_id)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .remove_public_key(public_key)
     }
 }
 

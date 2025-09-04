@@ -38,6 +38,15 @@ impl Contract {
         self.public_keys.insert(account_id, keys.clone());
     }
 
+    #[payable]
+    pub fn remove_public_key(&mut self, public_key: PublicKey) {
+        assert_one_yocto();
+        let account_id = env::predecessor_account_id();
+        let mut keys = self.internal_get_account(&account_id);
+        keys.remove(&public_key);
+        self.public_keys.insert(account_id, keys.clone());
+    }
+
     pub fn public_keys_of(&self, account_id: AccountId) -> HashSet<PublicKey> {
         self.internal_get_account(&account_id)
     }
