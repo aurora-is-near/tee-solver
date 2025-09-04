@@ -148,23 +148,22 @@ impl Contract {
             .expect("Invalid docker compose hash");
         let docker_compose_hash_hex = docker_compose_hash.as_hex();
 
-        // Remove the public key of the previous worker if exists
-        if pool.worker_id.is_some() {
-            let previous_worker_id = pool.worker_id.as_ref().expect("Pool has no worker");
-            let previous_worker = self
+        // Remove the public key of the inactive worker if exists
+        if let Some(inactive_worker_id) = pool.worker_id.as_ref() {
+            let inactive_worker = self
                 .worker_by_account_id
-                .get(previous_worker_id)
+                .get(inactive_worker_id)
                 .expect("Worker not registered");
             ext_intents_vault::ext(self.get_pool_account_id(pool_id))
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .remove_public_key(
                     self.intents_contract_id.clone(),
-                    previous_worker.public_key.clone(),
+                    inactive_worker.public_key.clone(),
                 )
                 .then(
                     Self::ext(env::current_account_id())
                         .with_static_gas(GAS_REGISTER_WORKER_CALLBACK)
-                        .on_previous_worker_key_removed(
+                        .on_inactive_worker_key_removed(
                             worker_id,
                             pool_id,
                             public_key,
@@ -184,7 +183,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn on_previous_worker_key_removed(
+    pub fn on_inactive_worker_key_removed(
         &mut self,
         worker_id: AccountId,
         pool_id: u32,
@@ -194,19 +193,19 @@ impl Contract {
         #[callback_result] call_result: Result<(), PromiseError>,
     ) -> Promise {
         if call_result.is_ok() {
-            // remove previous worker
+            // remove inactive worker
             let pool = self.pools.get(pool_id).expect("Pool not found");
-            let previous_worker_id = pool.worker_id.as_ref().expect("Pool has no worker");
-            let previous_worker = self
+            let inactive_worker_id = pool.worker_id.as_ref().expect("Pool has no worker");
+            let inactive_worker = self
                 .worker_by_account_id
-                .remove(previous_worker_id)
+                .remove(inactive_worker_id)
                 .expect("Worker not registered");
             Event::WorkerRemoved {
-                worker_id: previous_worker_id,
+                worker_id: inactive_worker_id,
                 pool_id: &pool_id,
-                public_key: &previous_worker.public_key,
-                compose_hash: &previous_worker.compose_hash,
-                checksum: &previous_worker.checksum,
+                public_key: &inactive_worker.public_key,
+                compose_hash: &inactive_worker.compose_hash,
+                checksum: &inactive_worker.checksum,
             }
             .emit();
 
@@ -219,7 +218,7 @@ impl Contract {
                 checksum,
             )
         } else {
-            env::panic_str("Failed to remove previous worker key");
+            env::panic_str("Failed to remove inactive worker key");
         }
     }
 
