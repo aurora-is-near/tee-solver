@@ -34,7 +34,12 @@ pub mod types;
 mod upgrade;
 mod view;
 
-const GAS_REGISTER_WORKER_CALLBACK: Gas = Gas::from_tgas(10);
+const GAS_ADD_WORKER_KEY: Gas = Gas::from_tgas(20);
+const GAS_REMOVE_WORKER_KEY: Gas = Gas::from_tgas(20);
+const GAS_ADD_WORKER_KEY_CALLBACK: Gas = Gas::from_tgas(10);
+const GAS_REMOVE_WORKER_KEY_CALLBACK: Gas = Gas::from_tgas(20) // 20 Tgas for the callback function itself
+    .saturating_add(GAS_ADD_WORKER_KEY)
+    .saturating_add(GAS_ADD_WORKER_KEY_CALLBACK);
 
 #[near(serializers = [json, borsh])]
 #[derive(Clone)]
@@ -156,13 +161,16 @@ impl Contract {
                 .expect("Worker not registered");
             ext_intents_vault::ext(self.get_pool_account_id(pool_id))
                 .with_attached_deposit(NearToken::from_yoctonear(1))
+                .with_static_gas(GAS_REMOVE_WORKER_KEY)
+                .with_unused_gas_weight(0)
                 .remove_public_key(
                     self.intents_contract_id.clone(),
                     inactive_worker.public_key.clone(),
                 )
                 .then(
                     Self::ext(env::current_account_id())
-                        .with_static_gas(GAS_REGISTER_WORKER_CALLBACK)
+                        .with_static_gas(GAS_REMOVE_WORKER_KEY_CALLBACK)
+                        .with_unused_gas_weight(0)
                         .on_inactive_worker_key_removed(
                             worker_id,
                             pool_id,
@@ -325,10 +333,13 @@ impl Contract {
         // Add the public key to the intents vault
         ext_intents_vault::ext(self.get_pool_account_id(pool_id))
             .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(GAS_ADD_WORKER_KEY)
+            .with_unused_gas_weight(0)
             .add_public_key(self.intents_contract_id.clone(), public_key.clone())
             .then(
                 Self::ext(env::current_account_id())
-                    .with_static_gas(GAS_REGISTER_WORKER_CALLBACK)
+                    .with_static_gas(GAS_ADD_WORKER_KEY_CALLBACK)
+                    .with_unused_gas_weight(0)
                     .on_worker_key_added(
                         worker_id,
                         pool_id,
