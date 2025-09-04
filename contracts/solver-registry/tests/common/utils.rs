@@ -1,8 +1,9 @@
 use std::str::FromStr;
+use std::collections::HashSet;
 
 use near_contract_standards::fungible_token::{metadata::FungibleTokenMetadata, Balance};
 use near_gas::NearGas;
-use near_sdk::NearToken;
+use near_sdk::{NearToken, AccountId, PublicKey};
 use near_workspaces::{
     network::Sandbox, result::ExecutionFinalResult, types::SecretKey, Account, Contract, Worker,
 };
@@ -510,4 +511,30 @@ pub async fn demonstrate_active_worker_pinging(
 
     println!("Active worker pinging demonstration completed");
     Ok(())
+}
+
+// Helper function to get public keys from mock-intents contract for a pool
+pub async fn get_pool_public_keys(
+    mock_intents: &Contract,
+    pool_account_id: &AccountId,
+) -> Result<HashSet<PublicKey>, Box<dyn std::error::Error>> {
+    let result = mock_intents
+        .view("public_keys_of")
+        .args_json(json!({"account_id": pool_account_id}))
+        .await?;
+    let public_keys: HashSet<PublicKey> = serde_json::from_slice(&result.result).unwrap();
+    Ok(public_keys)
+}
+
+// Helper function to get pool account ID from solver registry
+pub async fn get_pool_account_id(
+    solver_registry: &Contract,
+    pool_id: u32,
+) -> Result<AccountId, Box<dyn std::error::Error>> {
+    let result = solver_registry
+        .view("get_pool_account_id")
+        .args_json(json!({"pool_id": pool_id}))
+        .await?;
+    let pool_account_id: AccountId = serde_json::from_slice(&result.result).unwrap();
+    Ok(pool_account_id)
 }
