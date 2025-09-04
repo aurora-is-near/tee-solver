@@ -18,7 +18,7 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
     approve_compose_hash(&owner, &solver_registry).await?;
 
     // Get pool account ID before worker registration
-    let pool_account_id = get_pool_account_id(&solver_registry, 0).await?;
+    let pool_account_id = get_pool_account_id(&solver_registry, 0);
     println!("\n [LOG] Pool Account ID: {}", pool_account_id);
 
     // Verify no public keys exist for the pool initially
@@ -130,7 +130,7 @@ async fn test_worker_ping_functionality() -> Result<(), Box<dyn std::error::Erro
     approve_compose_hash(&owner, &solver_registry).await?;
 
     // Get pool account ID
-    let pool_account_id = get_pool_account_id(&solver_registry, 0).await?;
+    let pool_account_id = get_pool_account_id(&solver_registry, 0);
     println!("\n [LOG] Pool Account ID: {}", pool_account_id);
 
     // Verify no public keys exist for the pool initially
@@ -297,7 +297,7 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
     approve_compose_hash(&owner, &solver_registry).await?;
 
     // Get pool account ID
-    let pool_account_id = get_pool_account_id(&solver_registry, 0).await?;
+    let pool_account_id = get_pool_account_id(&solver_registry, 0);
     println!("\n [LOG] Pool Account ID: {}", pool_account_id);
 
     // Verify no public keys exist for the pool initially
@@ -407,10 +407,9 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
 
     // Verify that Alice is still registered although it's not active
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
-    let alice_worker = alice_worker_option.expect("Alice should still exists as a worker");
-    assert_eq!(
-        alice_worker.pool_id, 0,
-        "Alice should still be registered for pool 0"
+    assert!(
+        alice_worker_option.is_none(),
+        "Alice should has been removed"
     );
 
     // Verify that Bob is now the active worker for the pool
@@ -464,6 +463,7 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging(
     );
 
     // Verify that Alice's public key is now in the mock-intents contract for the pool
+    let pool_account_id = get_pool_account_id(&solver_registry, 0);
     let alice_public_keys = get_pool_public_keys(&mock_intents, &pool_account_id).await?;
     assert_eq!(
         alice_public_keys.len(),
@@ -509,6 +509,7 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging(
     );
 
     // Verify that Alice's public key is still the only one in the pool
+    let pool_account_id = get_pool_account_id(&solver_registry, 0);
     let public_keys_after_initial_ping =
         get_pool_public_keys(&mock_intents, &pool_account_id).await?;
     assert_eq!(
@@ -756,6 +757,7 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
     assert_eq!(bob_worker.pool_id, 0, "Bob should be registered for pool 0");
 
     // Verify that the pool now contains Bob's public key instead of Alice's
+    let pool_account_id = get_pool_account_id(&solver_registry, 0);
     let public_keys_after_bob_registration =
         get_pool_public_keys(&mock_intents, &pool_account_id).await?;
     assert_eq!(
@@ -778,10 +780,9 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
 
     // Verify that Alice is still registered although it's not active
     let alice_worker_option = get_worker_info(&solver_registry, &alice).await?;
-    let alice_worker = alice_worker_option.expect("Alice should still exists as a worker");
-    assert_eq!(
-        alice_worker.pool_id, 0,
-        "Alice should still be registered for pool 0"
+    assert!(
+        alice_worker_option.is_none(),
+        "Alice should has been removed"
     );
 
     // Verify that Bob is now the active worker for the pool
@@ -859,7 +860,7 @@ async fn test_worker_ping_without_registration() -> Result<(), Box<dyn std::erro
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
 
     // Get pool account ID
-    let pool_account_id = get_pool_account_id(&solver_registry, 0).await?;
+    let pool_account_id = get_pool_account_id(&solver_registry, 0);
     println!("\n [LOG] Pool Account ID: {}", pool_account_id);
 
     // Verify no public keys exist for the pool initially

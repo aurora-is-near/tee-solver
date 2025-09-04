@@ -526,15 +526,9 @@ pub async fn get_pool_public_keys(
     Ok(public_keys)
 }
 
-// Helper function to get pool account ID from solver registry
-pub async fn get_pool_account_id(
-    solver_registry: &Contract,
-    pool_id: u32,
-) -> Result<AccountId, Box<dyn std::error::Error>> {
-    let result = solver_registry
-        .view("get_pool_account_id")
-        .args_json(json!({"pool_id": pool_id}))
-        .await?;
-    let pool_account_id: AccountId = serde_json::from_slice(&result.result).unwrap();
-    Ok(pool_account_id)
+// Helper function to get pool account ID from pool ID
+pub fn get_pool_account_id(solver_registry: &Contract, pool_id: u32) -> AccountId {
+    format!("pool-{}.{}", pool_id, solver_registry.id())
+        .parse()
+        .unwrap()
 }
