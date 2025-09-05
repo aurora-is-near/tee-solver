@@ -402,7 +402,13 @@ impl Attestation {
         let launcher_bytes = sha256(app_compose.docker_compose_file.as_bytes());
 
         log!("compose_hash: {:?}", hex::encode(&launcher_bytes));
-        log!("allowed_hashes: {:?}", allowed_hashes.iter().map(|hash| hash.as_hex()).collect::<Vec<String>>());
+        log!(
+            "allowed_hashes: {:?}",
+            allowed_hashes
+                .iter()
+                .map(|hash| hash.as_hex())
+                .collect::<Vec<String>>()
+        );
 
         allowed_hashes
             .iter()
