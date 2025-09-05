@@ -1,17 +1,19 @@
 services:
   intents_tee_amm_solver:
-    image: robortyan/intents-tee-amm-solver:latest@sha256:91d6e0b2173f9a512bd92ca7ee7260f1c2bc2f5b88c7c92cc7cbcb7263e8e68e
+    image: robortyan/intents-tee-amm-solver@sha256:8e5a7ebe5e122973b3752992637d1f44ecebbb50cd47678bf4a79fb8d614f558
     platform: linux/amd64
     ports:
       - "3000:3000"
     environment:
+      TEE_ENABLED: true
       NEAR_NETWORK_ID: ${NEAR_NETWORK_ID}
-      NEAR_NODE_URL: ${NEAR_NODE_URL}
+      NEAR_NODE_URLS: ${NEAR_NODE_URLS}
       INTENTS_CONTRACT: ${INTENTS_CONTRACT}
       SOLVER_REGISTRY_CONTRACT: ${SOLVER_REGISTRY_CONTRACT}
       SOLVER_POOL_ID: ${SOLVER_POOL_ID}
       AMM_TOKEN1_ID: ${AMM_TOKEN1_ID}
       AMM_TOKEN2_ID: ${AMM_TOKEN2_ID}
+      MARGIN_PERCENT: ${MARGIN_PERCENT}
     restart: unless-stopped
     volumes:
       - /var/run/tappd.sock:/var/run/tappd.sock

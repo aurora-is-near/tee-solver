@@ -14,6 +14,7 @@ use derive_more::Constructor;
 use dstack_sdk_types::dstack::{EventLog, TcbInfo};
 use k256::sha2::{Digest as _, Sha384};
 use near_sdk::env::sha256;
+use near_sdk::log;
 use serde::{Deserialize, Serialize};
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
@@ -143,6 +144,16 @@ impl Attestation {
             );
             return false;
         };
+
+        log!("verify_tcb_status: {:?}", self.verify_tcb_status(&verification_result));
+        log!("verify_report_data: {:?}", self.verify_report_data(&expected_report_data, report_data));
+        log!("verify_static_rtmrs: {:?}", self.verify_static_rtmrs(report_data, &attestation.tcb_info, &expected_measurements));
+        log!("verify_rtmr3: {:?}", self.verify_rtmr3(report_data, &attestation.tcb_info));
+        log!("verify_app_compose: {:?}", self.verify_app_compose(&attestation.tcb_info));
+        log!("verify_launcher_compose_hash: {:?}", self.verify_launcher_compose_hash(
+            &attestation.tcb_info,
+            allowed_launcher_docker_compose_hashes,
+        ));
 
         // Verify all attestation components
         self.verify_tcb_status(&verification_result)
