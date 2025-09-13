@@ -12,6 +12,7 @@ type Balance = u128;
 
 use crate::token::TokenId;
 
+#[allow(dead_code)]
 #[ext_contract(ext_ft)]
 trait FungibleTokenContract {
     fn ft_transfer(
@@ -151,6 +152,9 @@ impl Contract {
     ) {
         let balances = self.internal_get_mt_balances(token_id);
         let current_balance = balances.get(account_id).unwrap_or(&0);
+        if amount > *current_balance {
+            env::panic_str("Insufficient balance for withdrawal");
+        }
         balances.insert(account_id.clone(), current_balance - amount);
     }
 
