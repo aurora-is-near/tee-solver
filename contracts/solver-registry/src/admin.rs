@@ -56,6 +56,13 @@ impl Contract {
         amount: U128,
     ) -> PromiseOrValue<U128> {
         self.assert_owner();
+
+        let pool = self.pools.get(pool_id).expect("Pool not found");
+        require!(pool.token_ids.contains(&token_id), "Invalid token ID");
+        // We don't check the amount doesn't exceed the pool balance because the solver registry 
+        // is not tracking the real-time NEAR Intents balance of the pool
+        require!(amount.0 > 0, "Invalid amount");
+
         let pool_account_id = self.get_pool_account_id(pool_id);
         ext_intents_vault::ext(pool_account_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
