@@ -4,7 +4,6 @@ use near_sdk::{
     NearToken, PanicOnDefault, PromiseError, PromiseOrValue, PublicKey,
 };
 use std::collections::HashSet;
-use std::ops::{Add, Sub};
 
 mod token;
 mod token_receiver;

@@ -41,7 +41,7 @@ impl FromStr for TokenId {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (standard, account_id) = s.split_once(':').ok_or("Invalid token id")?;
         Ok(Self {
-            account_id: account_id.parse().unwrap(),
+            account_id: account_id.parse().map_err(|_| "Invalid account id")?,
             standard: standard.to_string(),
         })
     }
