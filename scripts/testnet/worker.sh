@@ -1,7 +1,7 @@
 export NEAR_ENV=testnet
-export SOLVER_REGISTRY_CONTRACT=solver-registry-dev.testnet
+export SOLVER_REGISTRY_CONTRACT=solver-registry-stg.testnet
 export SOLVER_GOV_ACCOUNT=solver-gov.testnet
-export WORKER_CODEHASH=91d6e0b2173f9a512bd92ca7ee7260f1c2bc2f5b88c7c92cc7cbcb7263e8e68e
+export WORKER_COMPOSE_HASH=1248c4379f6d9825b6d3ccbb1ecb001af16761086285be9edc1f40291041e196
 
-# approve worker codehash
-near call $SOLVER_REGISTRY_CONTRACT approve_codehash '{"codehash":"'$WORKER_CODEHASH'"}' --accountId $SOLVER_GOV_ACCOUNT
+# approve worker compose hash
+near call $SOLVER_REGISTRY_CONTRACT approve_compose_hash '{"compose_hash":"'$WORKER_COMPOSE_HASH'"}' --accountId $SOLVER_GOV_ACCOUNT
