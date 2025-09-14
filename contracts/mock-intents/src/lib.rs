@@ -103,6 +103,10 @@ impl Contract {
         self.internal_get_account(&account_id)
     }
 
+    pub fn mt_balance_of(&self, account_id: AccountId, token_id: TokenId) -> U128 {
+        U128(self.internal_mt_balance_of(&account_id, &token_id))
+    }
+
     pub fn mt_batch_balance_of(&self, account_id: AccountId, token_ids: Vec<TokenId>) -> Vec<U128> {
         token_ids
             .into_iter()

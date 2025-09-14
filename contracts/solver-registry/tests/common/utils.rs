@@ -533,3 +533,44 @@ pub fn get_pool_account_id(solver_registry: &Contract, pool_id: u32) -> AccountI
         .parse()
         .unwrap()
 }
+
+// Helper function to check balances in mock intents contract using mt_batch_balance_of
+pub async fn get_mock_intents_balances(
+    mock_intents: &Contract,
+    account_id: &AccountId,
+    token_ids: Vec<AccountId>,
+) -> Result<Vec<u128>, Box<dyn std::error::Error>> {
+    let result = mock_intents
+        .view("mt_batch_balance_of")
+        .args_json(json!({
+            "account_id": account_id,
+            "token_ids": token_ids
+        }))
+        .await?;
+    let balances: Vec<near_sdk::json_types::U128> = serde_json::from_slice(&result.result).unwrap();
+    Ok(balances.into_iter().map(|b| b.0).collect())
+}
+
+// Helper function to withdraw assets from pool (admin function)
+pub async fn withdraw_from_pool(
+    solver_registry: &Contract,
+    owner: &Account,
+    pool_id: u32,
+    token_id: &AccountId,
+    amount: u128,
+) -> Result<near_workspaces::result::ExecutionFinalResult, Box<dyn std::error::Error>> {
+    let result = owner
+        .call(solver_registry.id(), "withdraw_from_pool")
+        .args_json(json!({
+            "pool_id": pool_id,
+            "token_id": token_id,
+            "amount": amount.to_string()
+        }))
+        .deposit(NearToken::from_yoctonear(1))
+        .gas(NearGas::from_tgas(200))
+        .transact()
+        .await?;
+
+    print_logs(&result);
+    Ok(result)
+}
