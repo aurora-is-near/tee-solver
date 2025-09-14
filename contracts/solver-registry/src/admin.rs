@@ -1,6 +1,8 @@
 use crate::*;
 use near_sdk::{json_types::U128, near, PromiseOrValue};
 
+const GAS_WITHDRAW_FROM_POOL_CALLBACK: Gas = Gas::from_tgas(5);
+
 #[near]
 impl Contract {
     /// Approve a docker compose hash for worker registration
@@ -48,8 +50,6 @@ impl Contract {
     }
 
     /// Withdraw tokens from a pool to owner account
-    /// TODO: static gas for functions
-    /// TODO: emit events for successful call
     #[payable]
     pub fn withdraw_from_pool(
         &mut self,
@@ -73,11 +73,39 @@ impl Contract {
                 token_id.clone(),
                 self.owner_id.clone(),
                 amount,
-                // TODO: confirm memo and message
-                None,
+                Some("withdraw from pool".to_string()),
                 None,
             )
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(GAS_WITHDRAW_FROM_POOL_CALLBACK)
+                    .with_unused_gas_weight(0)
+                    .on_withdraw_from_pool(pool_id, token_id),
+            )
             .into()
+    }
+
+    #[private]
+    pub fn on_withdraw_from_pool(
+        &mut self,
+        pool_id: u32,
+        token_id: AccountId,
+        #[callback_result] result: Result<U128, PromiseError>,
+    ) -> U128 {
+        if let Ok(amount) = result {
+            if amount.0 > 0 {
+                Event::AssetWithdrawn {
+                    pool_id: &pool_id,
+                    token_id: &token_id,
+                    amount: &amount,
+                }
+                .emit();
+            }
+
+            amount
+        } else {
+            U128(0)
+        }
     }
 }
 
