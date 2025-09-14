@@ -1,3 +1,4 @@
+use near_sdk::log;
 use near_sdk::store::LookupMap;
 use near_sdk::{
     assert_one_yocto, env, ext_contract, json_types::U128, near, AccountId, BorshStorageKey,
@@ -77,7 +78,9 @@ impl Contract {
         _msg: Option<String>,
     ) -> PromiseOrValue<U128> {
         assert_one_yocto();
-        self.internal_withdraw_mt_balance(&receiver_id.clone(), &token.clone().into(), amount.0);
+
+        let sender_id = env::predecessor_account_id();
+        self.internal_withdraw_mt_balance(&sender_id, &token.clone().into(), amount.0);
 
         ext_ft::ext(token)
             .with_attached_deposit(NearToken::from_yoctonear(1))

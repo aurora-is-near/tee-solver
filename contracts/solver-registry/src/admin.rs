@@ -48,6 +48,8 @@ impl Contract {
     }
 
     /// Withdraw tokens from a pool to owner account
+    /// TODO: static gas for functions
+    /// TODO: emit events for successful call
     #[payable]
     pub fn withdraw_from_pool(
         &mut self,
@@ -71,6 +73,7 @@ impl Contract {
                 token_id.clone(),
                 self.owner_id.clone(),
                 amount,
+                // TODO: confirm memo and message
                 None,
                 None,
             )

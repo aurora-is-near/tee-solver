@@ -557,7 +557,7 @@ pub async fn get_mock_intents_balance(
 pub async fn get_mock_intents_balances(
     mock_intents: &Contract,
     account_id: &AccountId,
-    token_ids: Vec<AccountId>,
+    token_ids: Vec<&AccountId>,
 ) -> Result<Vec<u128>, Box<dyn std::error::Error>> {
     // Convert AccountId to TokenId string format (standard:account_id)
     let token_ids: Vec<String> = token_ids

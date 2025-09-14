@@ -4,7 +4,6 @@ use serde_json::json;
 
 mod common;
 
-use common::constants::*;
 use common::utils::*;
 
 #[tokio::test]
@@ -86,7 +85,7 @@ async fn test_withdraw_assets_from_pool() -> Result<(), Box<dyn std::error::Erro
         &solver_registry,
         &owner,
         0,
-        &wnear.id(),
+        wnear.id(),
         withdraw_amount_wnear,
     )
     .await?;
@@ -120,14 +119,8 @@ async fn test_withdraw_assets_from_pool() -> Result<(), Box<dyn std::error::Erro
     let withdraw_amount_usdc = 25_000_000; // Withdraw 25 USDC
     println!("Withdrawing {} USDC from pool...", withdraw_amount_usdc);
 
-    let withdraw_result_usdc = withdraw_from_pool(
-        &solver_registry,
-        &owner,
-        0,
-        &usdc.id(),
-        withdraw_amount_usdc,
-    )
-    .await?;
+    let withdraw_result_usdc =
+        withdraw_from_pool(&solver_registry, &owner, 0, usdc.id(), withdraw_amount_usdc).await?;
 
     assert!(
         withdraw_result_usdc.is_success(),
@@ -209,7 +202,7 @@ async fn test_withdraw_assets_error_handling() -> Result<(), Box<dyn std::error:
     // Test 1: Try to withdraw with invalid amount (0)
     println!("Testing withdrawal with invalid amount (0)...");
     let invalid_withdraw_result =
-        withdraw_from_pool(&solver_registry, &owner, 0, &wnear.id(), 0).await?;
+        withdraw_from_pool(&solver_registry, &owner, 0, wnear.id(), 0).await?;
 
     assert!(
         !invalid_withdraw_result.is_success(),
@@ -223,7 +216,7 @@ async fn test_withdraw_assets_error_handling() -> Result<(), Box<dyn std::error:
         &solver_registry,
         &owner,
         0,
-        &invalid_token.id(),
+        invalid_token.id(),
         NearToken::from_near(1).as_yoctonear(),
     )
     .await?;
@@ -239,7 +232,7 @@ async fn test_withdraw_assets_error_handling() -> Result<(), Box<dyn std::error:
         &solver_registry,
         &owner,
         999, // Non-existent pool ID
-        &wnear.id(),
+        wnear.id(),
         NearToken::from_near(1).as_yoctonear(),
     )
     .await?;
