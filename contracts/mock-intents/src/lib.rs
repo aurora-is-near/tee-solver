@@ -103,11 +103,16 @@ impl Contract {
         self.internal_get_account(&account_id)
     }
 
-    pub fn mt_balance_of(&self, account_id: AccountId, token_id: TokenId) -> U128 {
+    pub fn mt_balance_of(&self, account_id: AccountId, token_id: String) -> U128 {
+        let token_id = token_id.parse().expect("Invalid token ID");
         U128(self.internal_mt_balance_of(&account_id, &token_id))
     }
 
-    pub fn mt_batch_balance_of(&self, account_id: AccountId, token_ids: Vec<TokenId>) -> Vec<U128> {
+    pub fn mt_batch_balance_of(&self, account_id: AccountId, token_ids: Vec<String>) -> Vec<U128> {
+        let token_ids: Vec<TokenId> = token_ids
+            .into_iter()
+            .map(|token_id| token_id.parse().expect("Invalid token ID"))
+            .collect();
         token_ids
             .into_iter()
             .map(|token_id| self.internal_mt_balance_of(&account_id, &token_id))
@@ -163,10 +168,10 @@ impl Contract {
     }
 
     fn internal_mt_balance_of(&self, account_id: &AccountId, token_id: &TokenId) -> Balance {
-        self.mt_balances
+        *self
+            .mt_balances
             .get(token_id)
             .and_then(|balances| balances.get(account_id))
             .unwrap_or(&0)
-            .clone()
     }
 }

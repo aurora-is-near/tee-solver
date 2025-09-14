@@ -60,21 +60,22 @@ async fn test_withdraw_assets_from_pool() -> Result<(), Box<dyn std::error::Erro
     println!("Pool account ID: {}", pool_account_id);
 
     // Check balances in mock intents contract before withdrawal
-    let token_ids = vec![wnear.id(), usdc.id()];
-    let balances_before =
-        get_mock_intents_balances(&mock_intents, &pool_account_id, token_ids.clone()).await?;
+    let wnear_balance_before =
+        get_mock_intents_balance(&mock_intents, &pool_account_id, &wnear.id()).await?;
+    let usdc_balance_before =
+        get_mock_intents_balance(&mock_intents, &pool_account_id, &usdc.id()).await?;
     println!(
         "Balances before withdrawal - wNEAR: {}, USDC: {}",
-        balances_before[0], balances_before[1]
+        wnear_balance_before, usdc_balance_before
     );
 
     // Verify that the pool has the expected balances
     assert_eq!(
-        balances_before[0], deposit_amount_wnear,
+        wnear_balance_before, deposit_amount_wnear,
         "Pool should have correct wNEAR balance"
     );
     assert_eq!(
-        balances_before[1], deposit_amount_usdc,
+        usdc_balance_before, deposit_amount_usdc,
         "Pool should have correct USDC balance"
     );
 
@@ -98,21 +99,23 @@ async fn test_withdraw_assets_from_pool() -> Result<(), Box<dyn std::error::Erro
     );
 
     // Check balances in mock intents contract after withdrawal
-    let balances_after =
-        get_mock_intents_balances(&mock_intents, &pool_account_id, token_ids.clone()).await?;
+    let wnear_balance_after =
+        get_mock_intents_balance(&mock_intents, &pool_account_id, &wnear.id()).await?;
+    let usdc_balance_after =
+        get_mock_intents_balance(&mock_intents, &pool_account_id, &usdc.id()).await?;
     println!(
         "Balances after withdrawal - wNEAR: {}, USDC: {}",
-        balances_after[0], balances_after[1]
+        wnear_balance_after, usdc_balance_after
     );
 
     // Verify that the pool balance decreased by the withdrawal amount
     assert_eq!(
-        balances_after[0],
-        balances_before[0] - withdraw_amount_wnear,
+        wnear_balance_after,
+        wnear_balance_before - withdraw_amount_wnear,
         "Pool wNEAR balance should decrease by withdrawal amount"
     );
     assert_eq!(
-        balances_after[1], balances_before[1],
+        usdc_balance_after, usdc_balance_before,
         "Pool USDC balance should remain unchanged"
     );
 
@@ -136,21 +139,23 @@ async fn test_withdraw_assets_from_pool() -> Result<(), Box<dyn std::error::Erro
     );
 
     // Check final balances
-    let balances_final =
-        get_mock_intents_balances(&mock_intents, &pool_account_id, token_ids).await?;
+    let wnear_balance_final =
+        get_mock_intents_balance(&mock_intents, &pool_account_id, &wnear.id()).await?;
+    let usdc_balance_final =
+        get_mock_intents_balance(&mock_intents, &pool_account_id, &usdc.id()).await?;
     println!(
         "Final balances - wNEAR: {}, USDC: {}",
-        balances_final[0], balances_final[1]
+        wnear_balance_final, usdc_balance_final
     );
 
     // Verify final balances
     assert_eq!(
-        balances_final[0],
+        wnear_balance_final,
         deposit_amount_wnear - withdraw_amount_wnear,
         "Final wNEAR balance should be correct"
     );
     assert_eq!(
-        balances_final[1],
+        usdc_balance_final,
         deposit_amount_usdc - withdraw_amount_usdc,
         "Final USDC balance should be correct"
     );
