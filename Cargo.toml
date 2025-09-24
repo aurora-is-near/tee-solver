@@ -1,5 +1,12 @@
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+# NEP-0330 is automatically implemented for all contracts built with https://github.com/near/cargo-near.
+# Link to the repository will be available via `contract_source_metadata` view-function.
+repository = "https://github.com/Near-One/tee-solver"
+
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "contracts/intents-vault",
     "contracts/solver-registry",
@@ -7,12 +14,21 @@ members = [
     "contracts/mock-ft",
 ]
 
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+similar_names = "allow"
+needless_pass_by_value = "allow"
+module_inception = "allow"
+
 [profile.release]
 codegen-units = 1
-# Tell `rustc` to optimize for small code size.
+# Tell `rustc` to optimize compiled code to descrease the code size.
 opt-level = "z"
 lto = true
 debug = false
 panic = "abort"
 # Opt into extra safety checks on arithmetic operations https://stackoverflow.com/a/64136471/249801
 overflow-checks = true
+strip = "symbols"

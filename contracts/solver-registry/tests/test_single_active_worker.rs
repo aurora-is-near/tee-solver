@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_lines)]
 mod common;
 
 use common::utils::*;
@@ -19,7 +20,7 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
 
     // Get pool account ID before worker registration
     let pool_account_id = get_pool_account_id(&solver_registry, 0);
-    println!("\n [LOG] Pool Account ID: {}", pool_account_id);
+    println!("\n [LOG] Pool Account ID: {pool_account_id}");
 
     // Verify no public keys exist for the pool initially
     let initial_public_keys = get_pool_public_keys(&mock_intents, &pool_account_id).await?;
@@ -76,7 +77,7 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
     );
 
     let error = result.into_result().unwrap_err();
-    println!("Expected error received: {:?}", error);
+    println!("Expected error received: {error:?}");
 
     // Verify that Bob is not registered as a worker
     let bob_worker_option = get_worker_info(&solver_registry, &bob).await?;
@@ -131,7 +132,7 @@ async fn test_worker_ping_functionality() -> Result<(), Box<dyn std::error::Erro
 
     // Get pool account ID
     let pool_account_id = get_pool_account_id(&solver_registry, 0);
-    println!("\n [LOG] Pool Account ID: {}", pool_account_id);
+    println!("\n [LOG] Pool Account ID: {pool_account_id}");
 
     // Verify no public keys exist for the pool initially
     let initial_public_keys = get_pool_public_keys(&mock_intents, &pool_account_id).await?;
@@ -223,7 +224,7 @@ async fn test_worker_ping_functionality() -> Result<(), Box<dyn std::error::Erro
     );
 
     let error = result.into_result().unwrap_err();
-    println!("Expected error received: {:?}", error);
+    println!("Expected error received: {error:?}");
 
     // Verify that Bob's public key is not in the pool
     let public_keys_after_bob_ping_attempt =
@@ -298,7 +299,7 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
 
     // Get pool account ID
     let pool_account_id = get_pool_account_id(&solver_registry, 0);
-    println!("\n [LOG] Pool Account ID: {}", pool_account_id);
+    println!("\n [LOG] Pool Account ID: {pool_account_id}");
 
     // Verify no public keys exist for the pool initially
     let initial_public_keys = get_pool_public_keys(&mock_intents, &pool_account_id).await?;
@@ -339,7 +340,7 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
     );
 
     let error = result.into_result().unwrap_err();
-    println!("Expected error received: {:?}", error);
+    println!("Expected error received: {error:?}");
 
     // Verify that the pool still only contains Alice's public key
     let public_keys_after_failed_bob_registration =
@@ -430,8 +431,8 @@ async fn test_worker_replacement_after_timeout() -> Result<(), Box<dyn std::erro
 }
 
 #[tokio::test]
-async fn test_worker_cannot_register_while_active_worker_is_pinging(
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn test_worker_cannot_register_while_active_worker_is_pinging()
+-> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker cannot register while active worker is pinging...");
     let sandbox = near_workspaces::sandbox().await?;
 
@@ -561,7 +562,7 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging(
     );
 
     let error = result.into_result().unwrap_err();
-    println!("Expected error received: {:?}", error);
+    println!("Expected error received: {error:?}");
 
     // Verify that Bob's public key is not in the pool
     let public_keys_after_failed_bob_registration =
@@ -657,8 +658,8 @@ async fn test_worker_cannot_register_while_active_worker_is_pinging(
 }
 
 #[tokio::test]
-async fn test_worker_can_register_after_inactive_worker_timeout(
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn test_worker_can_register_after_inactive_worker_timeout()
+-> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker can register after inactive worker timeout...");
     let sandbox = near_workspaces::sandbox().await?;
 
@@ -840,7 +841,7 @@ async fn test_worker_can_register_after_inactive_worker_timeout(
     );
 
     let error = result.into_result().unwrap_err();
-    println!("Expected error received: {:?}", error);
+    println!("Expected error received: {error:?}");
 
     println!("Test passed: Worker can register after inactive worker timeout");
 
@@ -861,7 +862,7 @@ async fn test_worker_ping_without_registration() -> Result<(), Box<dyn std::erro
 
     // Get pool account ID
     let pool_account_id = get_pool_account_id(&solver_registry, 0);
-    println!("\n [LOG] Pool Account ID: {}", pool_account_id);
+    println!("\n [LOG] Pool Account ID: {pool_account_id}");
 
     // Verify no public keys exist for the pool initially
     let initial_public_keys = get_pool_public_keys(&mock_intents, &pool_account_id).await?;
@@ -885,7 +886,7 @@ async fn test_worker_ping_without_registration() -> Result<(), Box<dyn std::erro
     );
 
     let error = result.into_result().unwrap_err();
-    println!("Expected error received: {:?}", error);
+    println!("Expected error received: {error:?}");
 
     // Verify that the pool still has no public keys after failed ping attempt
     let final_public_keys = get_pool_public_keys(&mock_intents, &pool_account_id).await?;

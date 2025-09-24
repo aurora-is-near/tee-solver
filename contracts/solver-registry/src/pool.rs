@@ -1,11 +1,13 @@
+use near_plugins::{Pausable, pause};
 use near_sdk::json_types::U128;
-// use near_sdk::json_types::U128;
 use near_sdk::store::LookupMap;
-use near_sdk::{near, require, AccountId, Gas, NearToken, PromiseError, PromiseOrValue};
+use near_sdk::{AccountId, Gas, NearToken, PromiseError, PromiseOrValue, near, require};
 
 use crate::events::Event;
 use crate::ext::ext_ft;
-use crate::*;
+use crate::{
+    Balance, Contract, ContractExt, Prefix, Promise, TimestampMs, block_timestamp_ms, env,
+};
 
 const CREATE_POOL_STORAGE_DEPOSIT: NearToken =
     NearToken::from_yoctonear(1_500_000_000_000_000_000_000_000); // 1.5 NEAR
@@ -50,8 +52,10 @@ pub struct PoolInfo {
 }
 
 impl Pool {
+    #[must_use]
     pub fn new(token_ids: Vec<AccountId>, fee: u32) -> Self {
-        require!(token_ids.len() == 2, "Must have exactly 2 tokens");
+        let tokens_len = token_ids.len();
+        require!(tokens_len == 2, "Must have exactly 2 tokens");
         require!(
             token_ids[0] != token_ids[1],
             "The two tokens cannot be identical"
@@ -59,8 +63,8 @@ impl Pool {
         require!(fee < 10_000, "Fee must be less than 100%");
 
         Self {
-            token_ids: token_ids.clone(),
-            amounts: vec![0; token_ids.len()],
+            token_ids,
+            amounts: vec![0; tokens_len],
             fee,
             shares: LookupMap::new(Prefix::PoolShares),
             shares_total_supply: 0,
@@ -79,6 +83,7 @@ impl Pool {
 impl Contract {
     /// Create a new liquidity pool for the given NEP-141 token IDs with fee in basis points
     #[payable]
+    #[pause]
     pub fn create_liquidity_pool(
         &mut self,
         token_ids: Vec<AccountId>,
@@ -93,7 +98,7 @@ impl Contract {
         let pool_id = self.pools.len();
 
         // Create sub account for managing liquidity pool's assets in NEAR Intents
-        let pool_account_id = self.get_pool_account_id(pool_id);
+        let pool_account_id = Self::get_pool_account_id(pool_id);
         Promise::new(pool_account_id)
             .create_account()
             .transfer(CREATE_POOL_STORAGE_DEPOSIT)
@@ -101,7 +106,7 @@ impl Contract {
             .then(
                 Self::ext(env::current_account_id())
                     .with_static_gas(GAS_CREATE_POOL_CALLBACK)
-                    .on_create_liquidity_pool_account(pool_id, token_ids, fee),
+                    .on_create_liquidity_pool_account(pool_id, &token_ids, fee),
             )
             .into()
     }
@@ -110,7 +115,7 @@ impl Contract {
     pub fn on_create_liquidity_pool_account(
         &mut self,
         pool_id: u32,
-        token_ids: Vec<AccountId>,
+        token_ids: &Vec<AccountId>,
         fee: u32,
         #[callback_result] call_result: Result<(), PromiseError>,
     ) -> Option<u32> {
@@ -124,7 +129,7 @@ impl Contract {
 
             Event::CreateLiquidityPool {
                 pool_id: &pool_id,
-                token_ids: &token_ids,
+                token_ids,
                 fee: &fee,
             }
             .emit();
@@ -134,14 +139,14 @@ impl Contract {
     }
 
     #[private]
-    pub fn on_deposit_into_pool(
+    pub const fn on_deposit_into_pool(
         &mut self,
         amount: U128,
         #[callback_result] used_fund: Result<U128, PromiseError>,
     ) -> U128 {
         if let Ok(used_fund) = used_fund {
             // Refund the unused amount.
-            // ft_transfser_call() returns the used fund
+            // ft_transfer_call() returns the used fund
             U128(amount.0.saturating_sub(used_fund.0))
         } else {
             amount
@@ -150,7 +155,7 @@ impl Contract {
 }
 
 impl Contract {
-    pub(crate) fn get_pool_account_id(&self, pool_id: u32) -> AccountId {
+    pub(crate) fn get_pool_account_id(pool_id: u32) -> AccountId {
         format!("pool-{}.{}", pool_id, env::current_account_id())
             .parse()
             .unwrap()
@@ -176,7 +181,7 @@ impl Contract {
                 self.intents_contract_id.clone(),
                 U128(amount),
                 Some("deposit into pool".to_string()),
-                self.get_pool_account_id(pool_id).to_string(),
+                Self::get_pool_account_id(pool_id).to_string(),
             )
             .then(Self::ext(env::current_account_id()).on_deposit_into_pool(U128(amount)))
             .into()

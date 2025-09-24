@@ -1,6 +1,6 @@
 use near_sdk::store::LookupMap;
 use near_sdk::{
-    assert_one_yocto, env, near, AccountId, BorshStorageKey, PanicOnDefault, PublicKey,
+    AccountId, BorshStorageKey, PanicOnDefault, PublicKey, assert_one_yocto, env, near,
 };
 use std::collections::HashSet;
 
@@ -22,6 +22,8 @@ pub enum Prefix {
 impl Contract {
     #[init]
     #[private]
+    #[allow(clippy::use_self)]
+    #[must_use]
     pub fn new() -> Self {
         Self {
             public_keys: LookupMap::new(Prefix::PublicKeys),
@@ -39,16 +41,16 @@ impl Contract {
     }
 
     #[payable]
-    pub fn remove_public_key(&mut self, public_key: PublicKey) {
+    pub fn remove_public_key(&mut self, public_key: &PublicKey) {
         assert_one_yocto();
         let account_id = env::predecessor_account_id();
         let mut keys = self.internal_get_account(&account_id);
-        keys.remove(&public_key);
+        keys.remove(public_key);
         self.public_keys.insert(account_id, keys.clone());
     }
 
-    pub fn public_keys_of(&self, account_id: AccountId) -> HashSet<PublicKey> {
-        self.internal_get_account(&account_id)
+    pub fn public_keys_of(&self, account_id: &AccountId) -> HashSet<PublicKey> {
+        self.internal_get_account(account_id)
     }
 }
 
@@ -56,7 +58,7 @@ impl Contract {
     fn internal_get_account(&self, account_id: &AccountId) -> HashSet<PublicKey> {
         self.public_keys
             .get(account_id)
-            .unwrap_or(&HashSet::new())
-            .clone()
+            .cloned()
+            .unwrap_or_else(HashSet::new)
     }
 }

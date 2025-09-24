@@ -4,8 +4,8 @@ use core::str::FromStr;
 use dcap_qvl::QuoteCollateralV3;
 use derive_more::{Deref, From, Into};
 use hex::FromHexError;
+use near_sdk::serde_json::Value;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use thiserror::Error;
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
@@ -79,7 +79,7 @@ impl FromStr for Collateral {
     /// - Hex fields cannot be decoded
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let json_value: Value =
-            serde_json::from_str(s).map_err(|_| CollateralError::InvalidJson)?;
+            near_sdk::serde_json::from_str(s).map_err(|_| CollateralError::InvalidJson)?;
         Self::try_from_json(json_value)
     }
 }

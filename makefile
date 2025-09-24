@@ -1,10 +1,8 @@
-RUSTFLAGS = "-C link-arg=-s"
-
 all: lint solver-registry intents-vault
 
 lint:
 	@cargo fmt --all
-	@cargo clippy --fix --allow-dirty --allow-staged
+	@cargo clippy --fix --allow-dirty --allow-staged --workspace -- -D warnings
 
 solver-registry:
 	$(call compile-release,solver-registry)
@@ -31,5 +29,5 @@ test: solver-registry intents-vault mock-intents mock-ft
 
 define compile-release
 	@rustup target add wasm32-unknown-unknown
-	@cd contracts/$(1) && cargo near build non-reproducible-wasm $(if $(2),--features $(2))
+	cargo near build non-reproducible-wasm --manifest-path contracts/$(1)/Cargo.toml $(if $(2),--features $(2))
 endef
