@@ -1,9 +1,12 @@
 use crate::*;
-use near_sdk::near;
+use near_sdk::{json_types::U128, near, PromiseOrValue};
+
+const GAS_WITHDRAW_FROM_POOL_CALLBACK: Gas = Gas::from_tgas(5);
 
 #[near]
 impl Contract {
     /// Approve a docker compose hash for worker registration
+    #[payable]
     pub fn approve_compose_hash(&mut self, compose_hash: String) {
         self.assert_owner();
         DockerComposeHash::try_from_hex(compose_hash.clone()).expect("Invalid compose hash");
@@ -17,6 +20,7 @@ impl Contract {
     }
 
     /// Remove an approved docker compose hash
+    #[payable]
     pub fn remove_compose_hash(&mut self, compose_hash: String) {
         self.assert_owner();
         DockerComposeHash::try_from_hex(compose_hash.clone()).expect("Invalid compose hash");
@@ -32,6 +36,7 @@ impl Contract {
         .emit();
     }
 
+    #[payable]
     pub fn change_owner(&mut self, new_owner_id: AccountId) {
         self.assert_owner();
         let old_owner_id = self.owner_id.clone();
@@ -43,10 +48,70 @@ impl Contract {
         }
         .emit();
     }
+
+    /// Withdraw tokens from a pool to owner account
+    #[payable]
+    pub fn withdraw_from_pool(
+        &mut self,
+        pool_id: u32,
+        token_id: AccountId,
+        amount: U128,
+    ) -> PromiseOrValue<U128> {
+        self.assert_owner();
+
+        let pool = self.pools.get(pool_id).expect("Pool not found");
+        require!(pool.token_ids.contains(&token_id), "Invalid token ID");
+        // We do not check that the amount does not exceed the pool balance because the solver registry
+        // is not tracking the real-time NEAR Intents balance of the pool
+        require!(amount.0 > 0, "Invalid amount");
+
+        let pool_account_id = self.get_pool_account_id(pool_id);
+        ext_intents_vault::ext(pool_account_id.clone())
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .ft_withdraw(
+                self.intents_contract_id.clone(),
+                token_id.clone(),
+                self.owner_id.clone(),
+                amount,
+                Some("withdraw from pool".to_string()),
+                None,
+            )
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(GAS_WITHDRAW_FROM_POOL_CALLBACK)
+                    .with_unused_gas_weight(0)
+                    .on_withdraw_from_pool(pool_id, token_id),
+            )
+            .into()
+    }
+
+    #[private]
+    pub fn on_withdraw_from_pool(
+        &mut self,
+        pool_id: u32,
+        token_id: AccountId,
+        #[callback_result] result: Result<U128, PromiseError>,
+    ) -> U128 {
+        if let Ok(amount) = result {
+            if amount.0 > 0 {
+                Event::AssetWithdrawn {
+                    pool_id: &pool_id,
+                    token_id: &token_id,
+                    amount: &amount,
+                }
+                .emit();
+            }
+
+            amount
+        } else {
+            U128(0)
+        }
+    }
 }
 
 impl Contract {
     pub(crate) fn assert_owner(&self) {
+        assert_one_yocto();
         require!(env::predecessor_account_id() == self.owner_id);
     }
 }

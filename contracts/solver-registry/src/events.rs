@@ -1,6 +1,4 @@
-use near_sdk::serde::Serialize;
-use near_sdk::serde_json::json;
-use near_sdk::{log, AccountId, PublicKey};
+use near_sdk::{json_types::U128, log, serde::Serialize, serde_json::json, AccountId, PublicKey};
 
 use crate::types::TimestampMs;
 
@@ -49,6 +47,16 @@ pub enum Event<'a> {
     OwnerChanged {
         old_owner_id: &'a AccountId,
         new_owner_id: &'a AccountId,
+    },
+    AssetDeposited {
+        pool_id: &'a u32,
+        token_id: &'a AccountId,
+        amount: &'a U128,
+    },
+    AssetWithdrawn {
+        pool_id: &'a u32,
+        token_id: &'a AccountId,
+        amount: &'a U128,
     },
 }
 
