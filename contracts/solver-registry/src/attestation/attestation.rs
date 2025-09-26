@@ -24,10 +24,12 @@ const EXPECTED_QUOTE_STATUS: &str = "UpToDate";
 
 // DSTACK_EVENT_TYPE is defined in https://github.com/Dstack-TEE/dstack/blob/cfa4cc4e8a4f525d537883b1a0ba5d9fbfd87f1e/tdx-attest/src/lib.rs#L28
 // It is the same for all events
-const DSTACK_EVENT_TYPE: u32 = 134217729;
+const DSTACK_EVENT_TYPE: u32 = 134_217_729;
 
 const COMPOSE_HASH_EVENT: &str = "compose-hash";
+#[allow(dead_code)]
 const KEY_PROVIDER_EVENT: &str = "key-provider";
+#[allow(dead_code)]
 const MPC_IMAGE_HASH_EVENT: &str = "mpc-image-digest";
 
 const RTMR3_INDEX: u32 = 3;
@@ -59,7 +61,7 @@ impl fmt::Debug for DstackAttestation {
         const MAX_BYTES: usize = 2048;
 
         fn truncate_debug<T: fmt::Debug>(value: &T, max_bytes: usize) -> String {
-            let debug_str = format!("{:?}", value);
+            let debug_str = format!("{value:?}");
             if debug_str.len() <= max_bytes {
                 debug_str
             } else {
@@ -97,9 +99,9 @@ impl Attestation {
         allowed_launcher_docker_compose_hashes: &[DockerComposeHash],
     ) -> bool {
         match self {
-            Self::Dstack(dstack_attestation) => self.verify_attestation(
+            Self::Dstack(dstack_attestation) => Self::verify_attestation(
                 dstack_attestation,
-                expected_report_data,
+                &expected_report_data,
                 timestamp_s,
                 allowed_mpc_docker_image_hashes,
                 allowed_launcher_docker_compose_hashes,
@@ -109,19 +111,17 @@ impl Attestation {
     }
 
     /// Checks whether the node is running the expected environment, including the expected Docker
-    /// images (launcher and MPC node), by verifying report_data, replaying RTMR3, and comparing
+    /// images (launcher and MPC node), by verifying `report_data`, replaying RTMR3, and comparing
     /// the relevant event values to expected values.
     fn verify_attestation(
-        &self,
         attestation: &DstackAttestation,
-        expected_report_data: ReportData,
+        expected_report_data: &ReportData,
         timestamp_s: u64,
         _allowed_mpc_docker_image_hashes: &[DockerImageHash],
         allowed_launcher_docker_compose_hashes: &[DockerComposeHash],
     ) -> bool {
-        let expected_measurements = match ExpectedMeasurements::from_embedded_tcb_info() {
-            Ok(measurements) => measurements,
-            Err(_) => return false,
+        let Ok(expected_measurements) = ExpectedMeasurements::from_embedded_tcb_info() else {
+            return false;
         };
 
         let verification_result = match dcap_qvl::verify::verify(
@@ -145,16 +145,16 @@ impl Attestation {
         };
 
         // Verify all attestation components
-        self.verify_tcb_status(&verification_result)
-            && self.verify_report_data(&expected_report_data, report_data)
-            && self.verify_static_rtmrs(report_data, &attestation.tcb_info, &expected_measurements)
-            && self.verify_rtmr3(report_data, &attestation.tcb_info)
-            && self.verify_app_compose(&attestation.tcb_info)
+        Self::verify_tcb_status(&verification_result)
+            && Self::verify_report_data(expected_report_data, report_data)
+            && Self::verify_static_rtmrs(report_data, &attestation.tcb_info, &expected_measurements)
+            && Self::verify_rtmr3(report_data, &attestation.tcb_info)
+            && Self::verify_app_compose(&attestation.tcb_info)
             // Note: skip local key provider since KMS is enabled
             // && self._verify_local_sgx_digest(&attestation.tcb_info, &expected_measurements)
             // Note: skip MPC hash since we don't emit the docker image hash event in solver
             // && self._verify_mpc_hash(&attestation.tcb_info, allowed_mpc_docker_image_hashes)
-            && self.verify_launcher_compose_hash(
+            && Self::verify_launcher_compose_hash(
                 &attestation.tcb_info,
                 allowed_launcher_docker_compose_hashes,
             )
@@ -189,7 +189,7 @@ impl Attestation {
                         return false;
                     }
 
-                    hasher.update(decoded_digest.as_slice())
+                    hasher.update(decoded_digest.as_slice());
                 }
                 Err(e) => {
                     tracing::error!(
@@ -207,13 +207,14 @@ impl Attestation {
 
     fn validate_app_compose_payload(expected_event_payload_hex: &str, app_compose: &str) -> bool {
         let expected_payload = match hex::decode(expected_event_payload_hex) {
-            Ok(bytes) => match <[u8; 32]>::try_from(bytes.as_slice()) {
-                Ok(expected_bytes) => expected_bytes,
-                Err(_) => {
+            Ok(bytes) => {
+                if let Ok(expected_bytes) = <[u8; 32]>::try_from(bytes.as_slice()) {
+                    expected_bytes
+                } else {
                     tracing::error!("Failed to convert decoded hex to [u8; 32] for ");
                     return false;
                 }
-            },
+            }
             Err(e) => {
                 tracing::error!(
                     "Failed to decode hex string for compose-hash event: {:?}",
@@ -229,7 +230,7 @@ impl Attestation {
     }
 
     /// Verifies TCB status and security advisories.
-    fn verify_tcb_status(&self, verification_result: &VerifiedReport) -> bool {
+    fn verify_tcb_status(verification_result: &VerifiedReport) -> bool {
         // The "UpToDate" TCB status indicates that the measured platform components (CPU
         // microcode, firmware, etc.) match the latest known good values published by Intel
         // and do not require any updates or mitigations.
@@ -243,11 +244,7 @@ impl Attestation {
     }
 
     /// Verifies report data matches expected values.
-    fn verify_report_data(
-        &self,
-        expected: &ReportData,
-        actual: &dcap_qvl::quote::TDReport10,
-    ) -> bool {
+    fn verify_report_data(expected: &ReportData, actual: &dcap_qvl::quote::TDReport10) -> bool {
         // Check if sha384(tls_public_key) matches the hash in report_data. This check effectively
         // proves that tls_public_key was included in the quote's report_data by an app running
         // inside a TDX enclave.
@@ -256,7 +253,6 @@ impl Attestation {
 
     /// Verifies static RTMRs match expected values.
     fn verify_static_rtmrs(
-        &self,
         report_data: &dcap_qvl::quote::TDReport10,
         tcb_info: &TcbInfo,
         expected_measurements: &ExpectedMeasurements,
@@ -276,16 +272,16 @@ impl Attestation {
     }
 
     /// Verifies RTMR3 by replaying event log.
-    fn verify_rtmr3(&self, report_data: &dcap_qvl::quote::TDReport10, tcb_info: &TcbInfo) -> bool {
+    fn verify_rtmr3(report_data: &dcap_qvl::quote::TDReport10, tcb_info: &TcbInfo) -> bool {
         tcb_info.rtmr3 == hex::encode(report_data.rt_mr3)
             && Self::verify_event_log_rtmr3(&tcb_info.event_log, report_data.rt_mr3)
     }
 
     /// Verifies app compose configuration and hash. The compose-hash is measured into RTMR3, and
-    /// since it's (roughly) a hash of the unmeasured docker_compose_file, this is sufficient to
+    /// since it's (roughly) a hash of the unmeasured `docker_compose_file`, this is sufficient to
     /// prove its validity.
-    fn verify_app_compose(&self, tcb_info: &TcbInfo) -> bool {
-        let app_compose: AppCompose = match serde_json::from_str(&tcb_info.app_compose) {
+    fn verify_app_compose(tcb_info: &TcbInfo) -> bool {
+        let app_compose: AppCompose = match near_sdk::serde_json::from_str(&tcb_info.app_compose) {
             Ok(compose) => compose,
             Err(e) => {
                 tracing::error!("Failed to parse app_compose JSON: {:?}", e);
@@ -327,7 +323,6 @@ impl Attestation {
 
     /// Verifies local key-provider event digest matches the expected digest.
     fn _verify_local_sgx_digest(
-        &self,
         tcb_info: &TcbInfo,
         expected_measurements: &ExpectedMeasurements,
     ) -> bool {
@@ -343,7 +338,7 @@ impl Attestation {
     }
 
     /// Verifies MPC node image hash is in allowed list.
-    fn _verify_mpc_hash(&self, tcb_info: &TcbInfo, allowed_hashes: &[DockerImageHash]) -> bool {
+    fn _verify_mpc_hash(tcb_info: &TcbInfo, allowed_hashes: &[DockerImageHash]) -> bool {
         let mut mpc_image_hash_events = tcb_info
             .event_log
             .iter()
@@ -359,11 +354,10 @@ impl Attestation {
     }
 
     fn verify_launcher_compose_hash(
-        &self,
         tcb_info: &TcbInfo,
         allowed_hashes: &[DockerComposeHash],
     ) -> bool {
-        let app_compose: AppCompose = match serde_json::from_str(&tcb_info.app_compose) {
+        let app_compose: AppCompose = match near_sdk::serde_json::from_str(&tcb_info.app_compose) {
             Ok(compose) => compose,
             Err(e) => {
                 tracing::error!("Failed to parse app_compose JSON: {:?}", e);

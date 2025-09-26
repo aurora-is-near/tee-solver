@@ -1,8 +1,7 @@
-use alloc::string::String;
 use borsh::{BorshDeserialize, BorshSerialize};
 use core::cell::LazyCell;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, Bytes};
+use serde_with::{Bytes, serde_as};
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 use alloc::string::ToString;
@@ -16,9 +15,9 @@ const TCB_INFO_STRING: &str = include_str!("./assets/tcb_info.json");
 /// The expected SHA-384 digest for the `local-sgx` event, not the event payload.
 ///
 /// Digest format:
-///   digest = SHA384( event_type + ":" + "key-provider" + ":"+payload) )
+///   digest = SHA384( `event_type` + ":" + "key-provider" + ":"+payload) )
 ///
-/// Payload format: sha256 {"name":"local-sgx", "id": "<mr_enclave of the provider>"}
+/// Payload format: sha256 {"name":"local-sgx", "id": "<`mr_enclave` of the provider>"}
 const EXPECTED_LOCAL_SGX_EVENT_DIGEST: [u8; 48] = [
     0x74, 0xca, 0x93, 0x9b, 0x8c, 0x3c, 0x74, 0xaa, 0xb3, 0xc3, 0x09, 0x66, 0xa7, 0x88, 0xf7, 0x74,
     0x39, 0x51, 0xd5, 0x4a, 0x93, 0x6a, 0x71, 0x1d, 0xd0, 0x14, 0x22, 0xf0, 0x03, 0xff, 0x9d, 0xf6,
@@ -86,24 +85,20 @@ impl ExpectedMeasurements {
     /// $ git rev-parse HEAD
     /// fbdf2e76fb6bd9142277fdd84809de87d86548ef
     ///
-    /// See also: https://github.com/Dstack-TEE/meta-dstack?tab=readme-ov-file#reproducible-build-the-guest-image
+    /// See also: <https://github.com/Dstack-TEE/meta-dstack?tab=readme-ov-file#reproducible-build-the-guest-image>
     pub fn from_embedded_tcb_info() -> Result<Self, MeasurementsError> {
-        let cache = LazyCell::new(|| -> Result<ExpectedMeasurements, MeasurementsError> {
+        let cache = LazyCell::new(|| -> Result<Self, MeasurementsError> {
             // Parse embedded tcb_info.json file and extract RTMR values dynamically
-            let tcb_info: DstackTcbInfo = serde_json::from_str(TCB_INFO_STRING)
+            let tcb_info: DstackTcbInfo = near_sdk::serde_json::from_str(TCB_INFO_STRING)
                 .map_err(|_| MeasurementsError::InvalidTcbInfo)?;
 
             // Helper function to decode hex RTMR values
-            let decode_rtmr = |name: &str,
-                               hex_value: &str|
-             -> Result<[u8; 48], MeasurementsError> {
-                let decoded = hex::decode(hex_value).map_err(|_| {
-                    MeasurementsError::InvalidHexValue(String::from(name), String::from(hex_value))
-                })?;
-                let decoded_len = decoded.len();
+            let decode_rtmr = |_: &str, hex_value: &str| -> Result<[u8; 48], MeasurementsError> {
+                let decoded =
+                    hex::decode(hex_value).map_err(|_| MeasurementsError::InvalidHexValue)?;
                 decoded
                     .try_into()
-                    .map_err(|_| MeasurementsError::InvalidLength(String::from(name), decoded_len))
+                    .map_err(|_| MeasurementsError::InvalidLength)
             };
 
             let rtmrs = Measurements {
@@ -113,7 +108,7 @@ impl ExpectedMeasurements {
                 mrtd: decode_rtmr("mrtd", &tcb_info.mrtd)?,
             };
 
-            Ok(ExpectedMeasurements {
+            Ok(Self {
                 rtmrs,
                 local_sgx_event_digest: EXPECTED_LOCAL_SGX_EVENT_DIGEST,
                 report_data_version: EXPECTED_REPORT_DATA_VERSION,
@@ -128,8 +123,8 @@ impl ExpectedMeasurements {
 pub enum MeasurementsError {
     NoTd10Report,
     InvalidTcbInfo,
-    InvalidHexValue(String, String),
-    InvalidLength(String, usize),
+    InvalidHexValue,
+    InvalidLength,
 }
 
 impl TryFrom<dcap_qvl::verify::VerifiedReport> for Measurements {

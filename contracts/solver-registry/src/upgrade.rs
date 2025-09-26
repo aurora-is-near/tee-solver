@@ -1,8 +1,8 @@
 use crate::{Contract, ContractExt};
 
 use near_sdk::{
-    assert_one_yocto, env, near_bindgen, AccountId, Gas, GasWeight, NearToken, Promise,
-    PromiseOrValue,
+    AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
+    near_bindgen,
 };
 
 #[near_bindgen]
@@ -10,14 +10,16 @@ impl Contract {
     #[init(ignore_state)]
     #[payable]
     #[private]
+    #[allow(clippy::use_self)]
+    #[must_use]
     pub fn migrate() -> Self {
         assert_one_yocto();
-        env::state_read::<Self>().expect("Failed to read contract state")
+        env::state_read::<Self>().unwrap_or_else(|| env::panic_str("Failed to read contract state"))
     }
 
     pub fn upgrade(&mut self) -> PromiseOrValue<AccountId> {
         self.assert_owner();
-        let code = env::input().expect("Code not found");
+        let code = env::input().unwrap_or_else(|| env::panic_str("Code not found"));
         Promise::new(env::current_account_id())
             .deploy_contract(code)
             .function_call_weight(
@@ -30,7 +32,7 @@ impl Contract {
             .function_call_weight(
                 "get_owner_id".into(),
                 vec![],
-                NearToken::from_millinear(0),
+                NearToken::ZERO,
                 Gas::from_tgas(10),
                 GasWeight(0),
             )

@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 use std::str::FromStr;
 
-use near_contract_standards::fungible_token::{metadata::FungibleTokenMetadata, Balance};
+use near_contract_standards::fungible_token::{Balance, metadata::FungibleTokenMetadata};
 use near_gas::NearGas;
+use near_sdk::serde_json::{self, json};
 use near_sdk::{AccountId, NearToken, PublicKey};
 use near_workspaces::{
-    network::Sandbox, result::ExecutionFinalResult, types::SecretKey, Account, Contract, Worker,
+    Account, Contract, Worker, network::Sandbox, result::ExecutionFinalResult, types::SecretKey,
 };
-use serde_json::json;
 use solver_registry::{pool::PoolInfo, types::TimestampMs};
 
 use super::constants::*;
@@ -134,8 +134,7 @@ pub async fn ft_transfer(
 pub async fn deploy_mock_intents(
     sandbox: &Worker<Sandbox>,
 ) -> Result<Contract, Box<dyn std::error::Error>> {
-    let mock_intents_contract_wasm =
-        std::fs::read(MOCK_INTENTS_CONTRACT_WASM).expect("Contract wasm not found");
+    let mock_intents_contract_wasm = std::fs::read(MOCK_INTENTS_CONTRACT_WASM)?;
     let mock_intents_account = create_account(sandbox, "intents", 100).await?;
     let mock_intents_contract = mock_intents_account
         .deploy(&mock_intents_contract_wasm)
@@ -144,7 +143,10 @@ pub async fn deploy_mock_intents(
 
     println!("Initializing solver mock intents contract...");
     let result = mock_intents_contract.call("new").transact().await?;
-    println!("\nResult init: {:?}", result);
+    assert!(
+        result.is_success(),
+        "Result of mock intents init: {result:#?}"
+    );
 
     Ok(mock_intents_contract)
 }
@@ -155,13 +157,13 @@ pub async fn deploy_solver_registry(
     owner: &Account,
     worker_ping_timeout_ms: TimestampMs,
 ) -> Result<Contract, Box<dyn std::error::Error>> {
-    let solver_registry_contract_wasm =
-        std::fs::read(SOLVER_REGISTRY_CONTRACT_WASM).expect("Contract wasm not found");
+    let solver_registry_contract_wasm = std::fs::read(SOLVER_REGISTRY_CONTRACT_WASM)?;
     let solver_registry_account = create_account(sandbox, "solver-registry", 100).await?;
-    let solver_registry_contract = solver_registry_account
+    let solver_registry_deploy_result = solver_registry_account
         .deploy(&solver_registry_contract_wasm)
-        .await?
-        .result;
+        .await?;
+    assert!(solver_registry_deploy_result.is_success());
+    let solver_registry_contract = solver_registry_deploy_result.result;
 
     println!("Initializing solver registry contract...");
     let result = solver_registry_contract
@@ -173,7 +175,11 @@ pub async fn deploy_solver_registry(
         }))
         .transact()
         .await?;
-    println!("\nResult init: {:?}", result);
+
+    assert!(
+        result.is_success(),
+        "Result of solver registry init: {result:#?}"
+    );
 
     Ok(solver_registry_contract)
 }
@@ -200,13 +206,13 @@ pub async fn deposit_into_pool(
         .gas(NearGas::from_tgas(200))
         .transact()
         .await?;
-    println!("\nResult: deposit token {:?}", result);
+    println!("\nResult: deposit token {result:?}");
 
     Ok(result)
 }
 
 // Helper function to print execution logs
-pub fn print_logs(result: &near_workspaces::result::ExecutionFinalResult) {
+pub fn print_logs(result: &ExecutionFinalResult) {
     for (i, log) in result.logs().iter().enumerate() {
         println!("  [{}] {}", i + 1, log);
     }
@@ -341,7 +347,7 @@ pub async fn create_liquidity_pool(
             "fee": 300
         }))
         .deposit(NearToken::from_yoctonear(1_500_000_000_000_000_000_000_000)) // 1.5 NEAR
-        .gas(NearGas::from_tgas(300))
+        .max_gas()
         .transact()
         .await?;
     assert!(
@@ -381,7 +387,7 @@ pub async fn register_worker(
     collateral: &str,
     checksum: &str,
     tcb_info: &str,
-) -> Result<near_workspaces::result::ExecutionFinalResult, Box<dyn std::error::Error>> {
+) -> Result<ExecutionFinalResult, Box<dyn std::error::Error>> {
     let result = worker
         .call(solver_registry.id(), "register_worker")
         .args_json(json!({
@@ -405,7 +411,7 @@ pub async fn register_worker_alice(
     alice: &Account,
     solver_registry: &Contract,
     pool_id: u32,
-) -> Result<near_workspaces::result::ExecutionFinalResult, Box<dyn std::error::Error>> {
+) -> Result<ExecutionFinalResult, Box<dyn std::error::Error>> {
     register_worker(
         alice,
         solver_registry,
@@ -423,7 +429,7 @@ pub async fn register_worker_bob(
     bob: &Account,
     solver_registry: &Contract,
     pool_id: u32,
-) -> Result<near_workspaces::result::ExecutionFinalResult, Box<dyn std::error::Error>> {
+) -> Result<ExecutionFinalResult, Box<dyn std::error::Error>> {
     register_worker(
         bob,
         solver_registry,
@@ -438,10 +444,7 @@ pub async fn register_worker_bob(
 
 // Helper function to wait for worker timeout
 pub async fn wait_for_worker_timeout(timeout_seconds: u64) {
-    println!(
-        "Waiting for worker timeout ({} seconds)...",
-        timeout_seconds
-    );
+    println!("Waiting for worker timeout ({timeout_seconds} seconds)...");
     tokio::time::sleep(tokio::time::Duration::from_secs(timeout_seconds + 1)).await;
     // Add 1 second buffer
 }
@@ -476,7 +479,7 @@ pub async fn get_pool_info(
 pub async fn ping_worker(
     worker: &Account,
     solver_registry: &Contract,
-) -> Result<near_workspaces::result::ExecutionFinalResult, Box<dyn std::error::Error>> {
+) -> Result<ExecutionFinalResult, Box<dyn std::error::Error>> {
     let result = worker.call(solver_registry.id(), "ping").transact().await?;
     Ok(result)
 }
@@ -489,12 +492,11 @@ pub async fn demonstrate_active_worker_pinging(
     delay_ms: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!(
-        "Demonstrating active worker pinging with {} pings and {}ms delay...",
-        num_pings, delay_ms
+        "Demonstrating active worker pinging with {num_pings} pings and {delay_ms}ms delay..."
     );
 
     for i in 1..=num_pings {
-        println!("Ping {} of {}...", i, num_pings);
+        println!("Ping {i} of {num_pings}...");
         let result = ping_worker(worker, solver_registry).await?;
         assert!(
             result.is_success(),

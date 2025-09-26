@@ -1,6 +1,6 @@
-use borsh::{BorshDeserialize, BorshSerialize};
 use derive_more::Constructor;
 use near_sdk::PublicKey;
+use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_384};
 
@@ -28,11 +28,12 @@ pub enum ReportDataVersion {
 }
 
 impl ReportDataVersion {
-    pub fn to_be_bytes(self) -> [u8; BINARY_VERSION_SIZE] {
+    pub const fn to_be_bytes(self) -> [u8; BINARY_VERSION_SIZE] {
         (self as u16).to_be_bytes()
     }
 
-    pub fn from_be_bytes(bytes: [u8; BINARY_VERSION_SIZE]) -> Option<Self> {
+    #[allow(dead_code)]
+    pub const fn from_be_bytes(bytes: [u8; BINARY_VERSION_SIZE]) -> Option<Self> {
         match u16::from_be_bytes(bytes) {
             1 => Some(Self::V1),
             _ => None,
@@ -45,7 +46,7 @@ pub struct ReportDataV1 {
     tls_public_key: PublicKey,
 }
 
-/// report_data_v1: [u8; 64] =
+/// `report_data_v1`: [u8; 64] =
 ///   [version(2 bytes big endian) || sha384(TLS pub key) || zero padding]
 impl ReportDataV1 {
     /// V1-specific format constants
@@ -81,6 +82,7 @@ impl ReportDataV1 {
 
     /// Parses V1 report data from bytes. Returns the hash of public keys.
     /// Note: This only extracts the hash, not the original public keys.
+    #[allow(dead_code)]
     pub fn from_bytes(bytes: &[u8; REPORT_DATA_SIZE]) -> [u8; Self::PUBLIC_KEYS_HASH_SIZE] {
         // Extract hash using V1 format
         let mut hash = [0u8; Self::PUBLIC_KEYS_HASH_SIZE];
@@ -107,20 +109,21 @@ pub enum ReportData {
 }
 
 impl ReportData {
-    pub fn new(tls_public_key: PublicKey) -> Self {
-        ReportData::V1(ReportDataV1::new(tls_public_key))
+    pub const fn new(tls_public_key: PublicKey) -> Self {
+        Self::V1(ReportDataV1::new(tls_public_key))
     }
 
-    pub fn version(&self) -> ReportDataVersion {
+    #[allow(dead_code)]
+    pub const fn version(&self) -> ReportDataVersion {
         match self {
-            ReportData::V1(_) => ReportDataVersion::V1,
+            Self::V1(_) => ReportDataVersion::V1,
         }
     }
 
     /// Generates the binary representation of report data.
     pub fn to_bytes(&self) -> [u8; REPORT_DATA_SIZE] {
         match self {
-            ReportData::V1(v1) => v1.to_bytes(),
+            Self::V1(v1) => v1.to_bytes(),
         }
     }
 }
