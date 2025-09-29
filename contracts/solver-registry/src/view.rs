@@ -1,12 +1,8 @@
-use crate::*;
+use crate::{Contract, ContractExt, PoolInfo, TimestampMs, Worker, near};
 use near_sdk::AccountId;
 
 #[near]
 impl Contract {
-    pub fn get_owner_id(&self) -> AccountId {
-        self.owner_id.clone()
-    }
-
     /// Get all approved docker compose hashes
     pub fn get_approved_compose_hashes(&self) -> Vec<String> {
         self.approved_compose_hashes.iter().cloned().collect()
@@ -31,8 +27,8 @@ impl Contract {
         self.worker_by_account_id.len()
     }
 
-    pub fn get_worker(&self, account_id: AccountId) -> Option<Worker> {
-        self.worker_by_account_id.get(&account_id).cloned()
+    pub fn get_worker(&self, account_id: &AccountId) -> Option<Worker> {
+        self.worker_by_account_id.get(account_id).cloned()
     }
 
     pub fn get_workers(&self, offset: u32, limit: u32) -> Vec<&Worker> {
@@ -43,7 +39,7 @@ impl Contract {
             .collect()
     }
 
-    pub fn get_worker_ping_timeout_ms(&self) -> TimestampMs {
+    pub const fn get_worker_ping_timeout_ms(&self) -> TimestampMs {
         self.worker_ping_timeout_ms
     }
 }

@@ -1,5 +1,5 @@
 use near_contract_standards::fungible_token::metadata::{
-    FungibleTokenMetadata, FungibleTokenMetadataProvider, FT_METADATA_SPEC,
+    FT_METADATA_SPEC, FungibleTokenMetadata, FungibleTokenMetadataProvider,
 };
 use near_contract_standards::fungible_token::{
     FungibleToken, FungibleTokenCore, FungibleTokenResolver,
@@ -10,7 +10,7 @@ use near_contract_standards::storage_management::{
 use near_sdk::borsh::BorshSerialize;
 use near_sdk::collections::LazyOption;
 use near_sdk::json_types::U128;
-use near_sdk::{log, near, AccountId, BorshStorageKey, NearToken, PanicOnDefault, PromiseOrValue};
+use near_sdk::{AccountId, BorshStorageKey, NearToken, PanicOnDefault, PromiseOrValue, log, near};
 
 #[derive(PanicOnDefault)]
 #[near(contract_state)]
@@ -33,11 +33,13 @@ impl Contract {
     /// Initializes the contract with the given total supply owned by the given `owner_id` with
     /// default metadata (for example purposes only).
     #[init]
-    pub fn new_default_meta(owner_id: AccountId, total_supply: U128) -> Self {
+    #[must_use]
+    #[allow(clippy::use_self)]
+    pub fn new_default_meta(owner_id: &AccountId, total_supply: U128) -> Self {
         Self::new(
             owner_id,
             total_supply,
-            FungibleTokenMetadata {
+            &FungibleTokenMetadata {
                 spec: FT_METADATA_SPEC.to_string(),
                 name: "Mocked Fungible Token".to_string(),
                 symbol: "MOCKED".to_string(),
@@ -52,17 +54,19 @@ impl Contract {
     /// Initializes the contract with the given total supply owned by the given `owner_id` with
     /// the given fungible token metadata.
     #[init]
-    pub fn new(owner_id: AccountId, total_supply: U128, metadata: FungibleTokenMetadata) -> Self {
+    #[must_use]
+    #[allow(clippy::use_self)]
+    pub fn new(owner_id: &AccountId, total_supply: U128, metadata: &FungibleTokenMetadata) -> Self {
         metadata.assert_valid();
         let mut this = Self {
             token: FungibleToken::new(StorageKey::FungibleToken),
-            metadata: LazyOption::new(StorageKey::Metadata, Some(&metadata)),
+            metadata: LazyOption::new(StorageKey::Metadata, Some(metadata)),
         };
-        this.token.internal_register_account(&owner_id);
-        this.token.internal_deposit(&owner_id, total_supply.into());
+        this.token.internal_register_account(owner_id);
+        this.token.internal_deposit(owner_id, total_supply.into());
 
         near_contract_standards::fungible_token::events::FtMint {
-            owner_id: &owner_id,
+            owner_id,
             amount: total_supply,
             memo: Some("new tokens are minted"),
         }
@@ -76,7 +80,7 @@ impl Contract {
 impl FungibleTokenCore for Contract {
     #[payable]
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>) {
-        self.token.ft_transfer(receiver_id, amount, memo)
+        self.token.ft_transfer(receiver_id, amount, memo);
     }
 
     #[payable]

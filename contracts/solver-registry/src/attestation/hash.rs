@@ -125,7 +125,7 @@ pub type DockerComposeHash = Hash32<Compose>;
 mod tests {
     use super::*;
 
-    use rand::{rngs::StdRng, RngCore, SeedableRng};
+    use rand::{RngCore, SeedableRng, rngs::StdRng};
 
     struct TestMarker;
     type TestHash = Hash32<TestMarker>;
@@ -164,6 +164,11 @@ mod tests {
 
     #[test]
     fn test_as_ref() {
+        // Test can be used where &[u8; 32] is expected
+        fn takes_bytes_ref(b: &[u8; 32]) -> u8 {
+            b[0]
+        }
+
         let bytes = [42u8; 32];
         let hash = TestHash::from(bytes);
 
@@ -171,10 +176,6 @@ mod tests {
         let bytes_ref: &[u8; 32] = hash.as_ref();
         assert_eq!(bytes_ref, &bytes);
 
-        // Test can be used where &[u8; 32] is expected
-        fn takes_bytes_ref(b: &[u8; 32]) -> u8 {
-            b[0]
-        }
         assert_eq!(takes_bytes_ref(hash.as_ref()), 42);
     }
 
@@ -242,7 +243,7 @@ mod tests {
     fn test_slice_operations() {
         let mut bytes = [0u8; 32];
         for (i, byte) in bytes.iter_mut().enumerate() {
-            *byte = i as u8;
+            *byte = u8::try_from(i).unwrap();
         }
         let hash = TestHash::from(bytes);
 
@@ -270,8 +271,8 @@ mod tests {
         let hash = TestHash::from(bytes);
 
         // When
-        let bytes_as_json = serde_json::to_string(&bytes).unwrap();
-        let hash_as_json = serde_json::to_string(&hash).unwrap();
+        let bytes_as_json = near_sdk::serde_json::to_string(&bytes).unwrap();
+        let hash_as_json = near_sdk::serde_json::to_string(&hash).unwrap();
 
         // Then
         assert_eq!(bytes_as_json, hash_as_json);

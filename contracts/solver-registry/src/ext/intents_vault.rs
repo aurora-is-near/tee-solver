@@ -1,4 +1,4 @@
-use near_sdk::{ext_contract, AccountId, PublicKey};
+use near_sdk::{AccountId, PublicKey, ext_contract};
 
 #[allow(dead_code)]
 #[ext_contract(ext_intents_vault)]

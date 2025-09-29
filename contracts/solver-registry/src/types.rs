@@ -1,4 +1,4 @@
-use near_sdk::{near, BorshStorageKey};
+use near_sdk::{BorshStorageKey, near};
 
 pub type Balance = u128;
 pub type TimestampMs = u64;

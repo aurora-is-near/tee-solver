@@ -1,7 +1,7 @@
 use near_sdk::json_types::U128;
-use near_sdk::{log, near, AccountId, PromiseOrValue};
+use near_sdk::{AccountId, PromiseOrValue, log, near};
 
-use crate::*;
+use crate::{Contract, ContractExt, env};
 
 #[near]
 impl Contract {
@@ -14,7 +14,8 @@ impl Contract {
         let receiver_id = if msg.is_empty() {
             sender_id
         } else {
-            msg.parse().unwrap()
+            msg.parse()
+                .unwrap_or_else(|e| env::panic_str(&format!("Invalid message: {e}")))
         };
 
         let token_id = env::predecessor_account_id();

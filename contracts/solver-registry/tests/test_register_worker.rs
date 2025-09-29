@@ -1,6 +1,6 @@
 use near_gas::NearGas;
 use near_sdk::NearToken;
-use serde_json::json;
+use near_sdk::serde_json::json;
 
 mod common;
 
@@ -115,7 +115,7 @@ async fn test_worker_registration_with_invalid_tee_data() -> Result<(), Box<dyn 
     );
 
     let error = result.into_result().unwrap_err();
-    println!("Expected error received: {:?}", error);
+    println!("Expected error received: {error:?}");
 
     println!("Test passed: Worker registration properly validates TEE data");
 
@@ -123,8 +123,8 @@ async fn test_worker_registration_with_invalid_tee_data() -> Result<(), Box<dyn 
 }
 
 #[tokio::test]
-async fn test_worker_registration_requires_sufficient_deposit(
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn test_worker_registration_requires_sufficient_deposit()
+-> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker registration requires sufficient deposit...");
     let sandbox = near_workspaces::sandbox().await?;
 
@@ -161,7 +161,7 @@ async fn test_worker_registration_requires_sufficient_deposit(
     );
 
     let error = result.into_result().unwrap_err();
-    println!("Expected error received: {:?}", error);
+    println!("Expected error received: {error:?}");
 
     println!("Test passed: Worker registration requires sufficient deposit");
 
@@ -169,8 +169,8 @@ async fn test_worker_registration_requires_sufficient_deposit(
 }
 
 #[tokio::test]
-async fn test_worker_registration_without_compose_hash_approval(
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn test_worker_registration_without_compose_hash_approval()
+-> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker registration without compose hash approval...");
     let sandbox = near_workspaces::sandbox().await?;
 
@@ -192,7 +192,7 @@ async fn test_worker_registration_without_compose_hash_approval(
     );
 
     let error = result.into_result().unwrap_err();
-    println!("Expected error received: {:?}", error);
+    println!("Expected error received: {error:?}");
 
     println!("Test passed: Worker registration requires compose hash approval");
 
@@ -228,7 +228,7 @@ async fn test_approve_compose_hash_with_non_owner() -> Result<(), Box<dyn std::e
     );
 
     let error = result.into_result().unwrap_err();
-    println!("Expected error received: {:?}", error);
+    println!("Expected error received: {error:?}");
 
     println!("Test passed: Only owner can approve compose hash");
 
@@ -261,7 +261,7 @@ async fn test_worker_registration_with_invalid_pool_id() -> Result<(), Box<dyn s
     );
 
     let error = result.into_result().unwrap_err();
-    println!("Expected error received: {:?}", error);
+    println!("Expected error received: {error:?}");
 
     println!("Test passed: Worker registration validates pool ID");
 

@@ -1,6 +1,6 @@
 use near_sdk::serde::Serialize;
 use near_sdk::serde_json::json;
-use near_sdk::{log, AccountId, PublicKey};
+use near_sdk::{AccountId, PublicKey, log};
 
 use crate::types::TimestampMs;
 
@@ -45,10 +45,6 @@ pub enum Event<'a> {
     },
     ComposeHashRemoved {
         compose_hash: &'a String,
-    },
-    OwnerChanged {
-        old_owner_id: &'a AccountId,
-        new_owner_id: &'a AccountId,
     },
 }
 
