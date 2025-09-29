@@ -6,7 +6,8 @@ use near_sdk::{AccountId, Gas, NearToken, PromiseError, PromiseOrValue, near, re
 use crate::events::Event;
 use crate::ext::ext_ft;
 use crate::{
-    Balance, Contract, ContractExt, Prefix, Promise, TimestampMs, block_timestamp_ms, env,
+    Balance, Contract, ContractExt, ONE_YOCTO, Prefix, Promise, TimestampMs, block_timestamp_ms,
+    env,
 };
 
 const CREATE_POOL_STORAGE_DEPOSIT: NearToken =
@@ -130,9 +131,9 @@ impl Contract {
             self.pools.flush();
 
             Event::CreateLiquidityPool {
-                pool_id: &pool_id,
+                pool_id,
                 token_ids,
-                fee: &fee,
+                fee,
             }
             .emit();
 
@@ -141,28 +142,31 @@ impl Contract {
     }
 
     #[private]
-    pub const fn on_deposit_into_pool(
+    pub fn on_deposit_into_pool(
         &mut self,
         pool_id: u32,
-        token_id: AccountId,
+        token_id: &AccountId,
         amount: U128,
-        #[callback_result] used_fund: Result<U128, PromiseError>,
+        #[callback_result] result: Result<U128, PromiseError>,
     ) -> U128 {
-        if let Ok(used_fund) = used_fund {
-            if used_fund.0 > 0 {
-                Event::AssetDeposited {
-                    pool_id: &pool_id,
-                    token_id: &token_id,
-                    amount: &amount,
+        match result {
+            Ok(used_fund) => {
+                if used_fund.0 > 0 {
+                    Event::AssetDeposited {
+                        pool_id,
+                        token_id,
+                        amount: &amount,
+                    }
+                    .emit();
                 }
-                .emit();
-            }
 
-            // Refund the unused amount.
-            // ft_transfer_call() returns the used fund
-            U128(amount.0.saturating_sub(used_fund.0))
-        } else {
-            amount
+                // Refund the unused amount.
+                // ft_transfer_call() returns the used fund
+                U128(amount.0.saturating_sub(used_fund.0))
+            }
+            Err(e) => {
+                env::panic_str(&format!("Error depositing into pool: {e:?}"));
+            }
         }
     }
 }
@@ -189,7 +193,7 @@ impl Contract {
         // deposit the fund into NEAR Intents
         // NEAR Intents docs: https://docs.near-intents.org/near-intents/market-makers/verifier/deposits-and-withdrawals/deposits
         ext_ft::ext(token_id.clone())
-            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_attached_deposit(ONE_YOCTO)
             .ft_transfer_call(
                 self.intents_contract_id.clone(),
                 U128(amount),
@@ -200,7 +204,7 @@ impl Contract {
                 Self::ext(env::current_account_id())
                     .with_static_gas(GAS_DEPOSIT_INTO_POOL_CALLBACK)
                     .with_unused_gas_weight(0)
-                    .on_deposit_into_pool(pool_id, token_id.clone(), U128(amount)),
+                    .on_deposit_into_pool(pool_id, token_id, U128(amount)),
             )
             .into()
     }

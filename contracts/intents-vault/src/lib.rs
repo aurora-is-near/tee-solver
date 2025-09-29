@@ -1,6 +1,6 @@
 use near_sdk::{
-    assert_one_yocto, env, ext_contract, json_types::U128, near, require, AccountId, NearToken,
-    Promise, PromiseOrValue, PublicKey,
+    AccountId, NearToken, Promise, PromiseOrValue, PublicKey, assert_one_yocto, env, ext_contract,
+    json_types::U128, near, require,
 };
 
 #[allow(dead_code)]
@@ -84,7 +84,7 @@ impl Contract {
         msg: Option<String>,
     ) -> PromiseOrValue<U128> {
         assert_one_yocto();
-        self.require_parent_account();
+        require_parent_account();
 
         ext_intents::ext(intents_contract_id)
             .with_attached_deposit(NearToken::from_yoctonear(1))

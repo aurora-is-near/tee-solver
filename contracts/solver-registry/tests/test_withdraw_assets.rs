@@ -1,12 +1,13 @@
 use near_gas::NearGas;
 use near_sdk::NearToken;
-use serde_json::json;
+use near_sdk::serde_json::json;
 
 mod common;
 
 use common::utils::*;
 
 #[tokio::test]
+#[allow(clippy::too_many_lines)]
 async fn test_withdraw_assets_from_pool() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting withdraw assets test...");
     let sandbox = near_workspaces::sandbox().await?;
@@ -56,7 +57,7 @@ async fn test_withdraw_assets_from_pool() -> Result<(), Box<dyn std::error::Erro
 
     // Get pool account ID
     let pool_account_id = get_pool_account_id(&solver_registry, 0);
-    println!("Pool account ID: {}", pool_account_id);
+    println!("Pool account ID: {pool_account_id}");
 
     // Check balances in mock intents contract before withdrawal
     let token_ids = vec![wnear.id(), usdc.id()];
@@ -79,7 +80,7 @@ async fn test_withdraw_assets_from_pool() -> Result<(), Box<dyn std::error::Erro
 
     // Withdraw some wNEAR from the pool (simulating stopping the solver)
     let withdraw_amount_wnear = NearToken::from_near(5).as_yoctonear(); // Withdraw 5 NEAR
-    println!("Withdrawing {} wNEAR from pool...", withdraw_amount_wnear);
+    println!("Withdrawing {withdraw_amount_wnear} wNEAR from pool...");
 
     let withdraw_result = withdraw_from_pool(
         &solver_registry,
@@ -117,7 +118,7 @@ async fn test_withdraw_assets_from_pool() -> Result<(), Box<dyn std::error::Erro
 
     // Withdraw some USDC from the pool
     let withdraw_amount_usdc = 25_000_000; // Withdraw 25 USDC
-    println!("Withdrawing {} USDC from pool...", withdraw_amount_usdc);
+    println!("Withdrawing {withdraw_amount_usdc} USDC from pool...");
 
     let withdraw_result_usdc =
         withdraw_from_pool(&solver_registry, &owner, 0, usdc.id(), withdraw_amount_usdc).await?;

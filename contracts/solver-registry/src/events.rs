@@ -1,7 +1,7 @@
+use near_sdk::json_types::U128;
 use near_sdk::serde::Serialize;
 use near_sdk::serde_json::json;
-use near_sdk::{log, AccountId, PublicKey};
-use near_sdk::json_types::U128;
+use near_sdk::{AccountId, PublicKey, log};
 
 use crate::types::TimestampMs;
 
@@ -19,27 +19,27 @@ pub const EVENT_STANDARD_VERSION: &str = "1.0.0";
 pub enum Event<'a> {
     WorkerRegistered {
         worker_id: &'a AccountId,
-        pool_id: &'a u32,
+        pool_id: u32,
         public_key: &'a PublicKey,
         compose_hash: &'a String,
         checksum: &'a String,
     },
     WorkerRemoved {
         worker_id: &'a AccountId,
-        pool_id: &'a u32,
+        pool_id: u32,
         public_key: &'a PublicKey,
         compose_hash: &'a String,
         checksum: &'a String,
     },
     CreateLiquidityPool {
-        pool_id: &'a u32,
+        pool_id: u32,
         token_ids: &'a Vec<AccountId>,
-        fee: &'a u32,
+        fee: u32,
     },
     WorkerPinged {
-        pool_id: &'a u32,
+        pool_id: u32,
         worker_id: &'a AccountId,
-        timestamp_ms: &'a TimestampMs,
+        timestamp_ms: TimestampMs,
     },
     ComposeHashApproved {
         compose_hash: &'a String,
@@ -51,12 +51,12 @@ pub enum Event<'a> {
         public_key: &'a PublicKey,
     },
     AssetDeposited {
-        pool_id: &'a u32,
+        pool_id: u32,
         token_id: &'a AccountId,
         amount: &'a U128,
     },
     AssetWithdrawn {
-        pool_id: &'a u32,
+        pool_id: u32,
         token_id: &'a AccountId,
         amount: &'a U128,
     },

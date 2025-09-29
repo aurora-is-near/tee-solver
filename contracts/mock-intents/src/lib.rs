@@ -1,8 +1,7 @@
-use near_sdk::log;
 use near_sdk::store::LookupMap;
 use near_sdk::{
-    assert_one_yocto, env, ext_contract, json_types::U128, near, AccountId, BorshStorageKey,
-    NearToken, PanicOnDefault, PromiseError, PromiseOrValue, PublicKey,
+    AccountId, BorshStorageKey, NearToken, PanicOnDefault, PromiseError, PromiseOrValue, PublicKey,
+    assert_one_yocto, env, ext_contract, json_types::U128, near,
 };
 use std::collections::HashSet;
 
@@ -27,7 +26,7 @@ trait FungibleTokenContract {
 #[near(contract_state)]
 pub struct Contract {
     public_keys: LookupMap<AccountId, HashSet<PublicKey>>,
-    mt_balances: LookupMap<TokenId, LookupMap<AccountId, Balance>>,
+    mt_balances: LookupMap<(TokenId, AccountId), Balance>,
 }
 
 #[near]
@@ -35,7 +34,6 @@ pub struct Contract {
 pub enum Prefix {
     PublicKeys,
     MultiTokenBalances,
-    MultiTokenBalancesByTokenId(TokenId),
 }
 
 #[near]
@@ -58,7 +56,7 @@ impl Contract {
         let account_id = env::predecessor_account_id();
         let mut keys = self.internal_get_account(&account_id);
         keys.insert(public_key);
-        self.public_keys.insert(account_id, keys.clone());
+        self.public_keys.insert(account_id, keys);
     }
 
     #[payable]
@@ -67,7 +65,7 @@ impl Contract {
         let account_id = env::predecessor_account_id();
         let mut keys = self.internal_get_account(&account_id);
         keys.remove(public_key);
-        self.public_keys.insert(account_id, keys.clone());
+        self.public_keys.insert(account_id, keys);
     }
 
     #[payable]
@@ -77,8 +75,9 @@ impl Contract {
         receiver_id: AccountId,
         amount: U128,
         memo: Option<String>,
-        _msg: Option<String>,
+        msg: Option<String>,
     ) -> PromiseOrValue<U128> {
+        let _ = msg;
         assert_one_yocto();
 
         let sender_id = env::predecessor_account_id();
@@ -92,7 +91,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn on_ft_withdraw(
+    pub const fn on_ft_withdraw(
         &mut self,
         amount: U128,
         #[callback_result] call_result: Result<(), PromiseError>,
@@ -109,18 +108,21 @@ impl Contract {
     }
 
     pub fn mt_balance_of(&self, account_id: AccountId, token_id: String) -> U128 {
-        let token_id = token_id.parse().expect("Invalid token ID");
-        U128(self.internal_mt_balance_of(&account_id, &token_id))
+        let token_id = token_id
+            .parse()
+            .unwrap_or_else(|_| env::panic_str("Invalid token ID"));
+        U128(self.internal_mt_balance_of(account_id, token_id))
     }
 
     pub fn mt_batch_balance_of(&self, account_id: AccountId, token_ids: Vec<String>) -> Vec<U128> {
-        let token_ids: Vec<TokenId> = token_ids
-            .into_iter()
-            .map(|token_id| token_id.parse().expect("Invalid token ID"))
-            .collect();
         token_ids
             .into_iter()
-            .map(|token_id| self.internal_mt_balance_of(&account_id, &token_id))
+            .map(|token_id| {
+                token_id
+                    .parse()
+                    .unwrap_or_else(|_| env::panic_str("Invalid token ID"))
+            })
+            .map(|token_id| self.internal_mt_balance_of(account_id.clone(), token_id))
             .map(U128)
             .collect()
     }
@@ -131,21 +133,21 @@ impl Contract {
         self.public_keys
             .get(account_id)
             .cloned()
-            .unwrap_or_else(HashSet::new)
+            .unwrap_or_default()
     }
-
-    fn internal_get_mt_balances(
-        &mut self,
-        token_id: &TokenId,
-    ) -> &mut LookupMap<AccountId, Balance> {
-        if !self.mt_balances.contains_key(token_id) {
-            self.mt_balances.insert(
-                token_id.clone(),
-                LookupMap::new(Prefix::MultiTokenBalancesByTokenId(token_id.clone())),
-            );
-        }
-        self.mt_balances.get_mut(token_id).unwrap()
-    }
+    //
+    // fn internal_get_mt_balances(
+    //     &mut self,
+    //     token_id: &TokenId,
+    // ) -> &mut LookupMap<AccountId, Balance> {
+    //     if !self.mt_balances.contains_key(token_id) {
+    //         self.mt_balances.insert(
+    //             token_id.clone(),
+    //             LookupMap::new(Prefix::MultiTokenBalancesByTokenId(token_id.clone())),
+    //         );
+    //     }
+    //     self.mt_balances.get_mut(token_id).unwrap()
+    // }
 
     fn internal_deposit_mt_balance(
         &mut self,
@@ -153,9 +155,14 @@ impl Contract {
         token_id: &TokenId,
         amount: Balance,
     ) {
-        let balances = self.internal_get_mt_balances(token_id);
-        let current_balance = balances.get(account_id).unwrap_or(&0);
-        balances.insert(account_id.clone(), current_balance + amount);
+        let key = (token_id.clone(), account_id.clone());
+        let current_balance = self.mt_balances.get(&key).unwrap_or(&0);
+        self.mt_balances.insert(
+            key,
+            current_balance
+                .checked_add(amount)
+                .unwrap_or_else(|| env::panic_str("Balance overflow")),
+        );
     }
 
     fn internal_withdraw_mt_balance(
@@ -164,19 +171,15 @@ impl Contract {
         token_id: &TokenId,
         amount: Balance,
     ) {
-        let balances = self.internal_get_mt_balances(token_id);
-        let current_balance = balances.get(account_id).unwrap_or(&0);
+        let key = (token_id.clone(), account_id.clone());
+        let current_balance = self.mt_balances.get(&key).unwrap_or(&0);
         if amount > *current_balance {
             env::panic_str("Insufficient balance for withdrawal");
         }
-        balances.insert(account_id.clone(), current_balance - amount);
+        self.mt_balances.insert(key, current_balance - amount);
     }
 
-    fn internal_mt_balance_of(&self, account_id: &AccountId, token_id: &TokenId) -> Balance {
-        *self
-            .mt_balances
-            .get(token_id)
-            .and_then(|balances| balances.get(account_id))
-            .unwrap_or(&0)
+    fn internal_mt_balance_of(&self, account_id: AccountId, token_id: TokenId) -> Balance {
+        *self.mt_balances.get(&(token_id, account_id)).unwrap_or(&0)
     }
 }

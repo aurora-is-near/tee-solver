@@ -1,29 +1,12 @@
 use std::str::FromStr;
 
-use near_sdk::{near, AccountId};
+use near_sdk::{AccountId, near};
 
 #[near(serializers = [json, borsh])]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TokenId {
     account_id: AccountId,
     standard: String,
-}
-
-impl TokenId {
-    pub fn new(account_id: AccountId, standard: String) -> Self {
-        Self {
-            account_id,
-            standard,
-        }
-    }
-
-    pub fn account_id(&self) -> &AccountId {
-        &self.account_id
-    }
-
-    pub fn standard(&self) -> &String {
-        &self.standard
-    }
 }
 
 impl From<AccountId> for TokenId {

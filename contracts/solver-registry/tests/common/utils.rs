@@ -542,7 +542,7 @@ pub async fn get_mock_intents_balance(
     account_id: &AccountId,
     token_id: &AccountId,
 ) -> Result<u128, Box<dyn std::error::Error>> {
-    let token_id_string = format!("nep141:{}", token_id);
+    let token_id_string = format!("nep141:{token_id}");
 
     let result = mock_intents
         .view("mt_balance_of")
@@ -562,10 +562,7 @@ pub async fn get_mock_intents_balances(
     token_ids: Vec<&AccountId>,
 ) -> Result<Vec<u128>, Box<dyn std::error::Error>> {
     // Convert AccountId to TokenId string format (standard:account_id)
-    let token_ids: Vec<String> = token_ids
-        .iter()
-        .map(|id| format!("nep141:{}", id))
-        .collect();
+    let token_ids: Vec<String> = token_ids.iter().map(|id| format!("nep141:{id}")).collect();
 
     let result = mock_intents
         .view("mt_batch_balance_of")
@@ -585,11 +582,12 @@ pub async fn withdraw_from_pool(
     pool_id: u32,
     token_id: &AccountId,
     amount: u128,
-) -> Result<near_workspaces::result::ExecutionFinalResult, Box<dyn std::error::Error>> {
+) -> Result<ExecutionFinalResult, Box<dyn std::error::Error>> {
     let result = owner
         .call(solver_registry.id(), "withdraw_from_pool")
         .args_json(json!({
             "pool_id": pool_id,
+            "receiver_id": owner.id(),
             "token_id": token_id,
             "amount": amount.to_string()
         }))
