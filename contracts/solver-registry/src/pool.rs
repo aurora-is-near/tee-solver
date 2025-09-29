@@ -11,7 +11,9 @@ use crate::{
 
 const CREATE_POOL_STORAGE_DEPOSIT: NearToken =
     NearToken::from_yoctonear(1_500_000_000_000_000_000_000_000); // 1.5 NEAR
+
 const GAS_CREATE_POOL_CALLBACK: Gas = Gas::from_tgas(10);
+const GAS_DEPOSIT_INTO_POOL_CALLBACK: Gas = Gas::from_tgas(5);
 
 const ERR_POOL_NOT_FOUND: &str = "Pool not found";
 const ERR_BAD_TOKEN_ID: &str = "Token doesn't exist in pool";
@@ -141,10 +143,21 @@ impl Contract {
     #[private]
     pub const fn on_deposit_into_pool(
         &mut self,
+        pool_id: u32,
+        token_id: AccountId,
         amount: U128,
         #[callback_result] used_fund: Result<U128, PromiseError>,
     ) -> U128 {
         if let Ok(used_fund) = used_fund {
+            if used_fund.0 > 0 {
+                Event::AssetDeposited {
+                    pool_id: &pool_id,
+                    token_id: &token_id,
+                    amount: &amount,
+                }
+                .emit();
+            }
+
             // Refund the unused amount.
             // ft_transfer_call() returns the used fund
             U128(amount.0.saturating_sub(used_fund.0))
@@ -183,7 +196,12 @@ impl Contract {
                 Some("deposit into pool".to_string()),
                 Self::get_pool_account_id(pool_id).to_string(),
             )
-            .then(Self::ext(env::current_account_id()).on_deposit_into_pool(U128(amount)))
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(GAS_DEPOSIT_INTO_POOL_CALLBACK)
+                    .with_unused_gas_weight(0)
+                    .on_deposit_into_pool(pool_id, token_id.clone(), U128(amount)),
+            )
             .into()
     }
 }

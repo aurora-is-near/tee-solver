@@ -1,6 +1,7 @@
 use near_sdk::serde::Serialize;
 use near_sdk::serde_json::json;
-use near_sdk::{AccountId, PublicKey, log};
+use near_sdk::{log, AccountId, PublicKey};
+use near_sdk::json_types::U128;
 
 use crate::types::TimestampMs;
 
@@ -45,6 +46,19 @@ pub enum Event<'a> {
     },
     ComposeHashRemoved {
         compose_hash: &'a String,
+    },
+    FullAccessKeyAdded {
+        public_key: &'a PublicKey,
+    },
+    AssetDeposited {
+        pool_id: &'a u32,
+        token_id: &'a AccountId,
+        amount: &'a U128,
+    },
+    AssetWithdrawn {
+        pool_id: &'a u32,
+        token_id: &'a AccountId,
+        amount: &'a U128,
     },
 }
 
