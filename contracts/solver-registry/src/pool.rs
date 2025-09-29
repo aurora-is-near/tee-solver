@@ -155,7 +155,7 @@ impl Contract {
                     Event::AssetDeposited {
                         pool_id,
                         token_id,
-                        amount: &amount,
+                        amount: &used_fund,
                     }
                     .emit();
                 }

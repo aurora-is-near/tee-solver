@@ -1,6 +1,7 @@
 use near_gas::NearGas;
 use near_sdk::NearToken;
 use near_sdk::serde_json::json;
+use rand::TryRngCore;
 
 mod common;
 
@@ -249,6 +250,7 @@ async fn test_withdraw_assets_error_handling() -> Result<(), Box<dyn std::error:
         .call(solver_registry.id(), "withdraw_from_pool")
         .args_json(json!({
             "pool_id": 0,
+            "receiver_id": alice.id(),
             "token_id": wnear.id(),
             "amount": NearToken::from_near(1).as_yoctonear().to_string()
         }))
@@ -258,7 +260,7 @@ async fn test_withdraw_assets_error_handling() -> Result<(), Box<dyn std::error:
         .await?;
 
     assert!(
-        !non_owner_withdraw_result.is_success(),
+        non_owner_withdraw_result.is_failure(),
         "Withdrawal as non-owner should fail"
     );
 
