@@ -1,6 +1,6 @@
-all: lint solver-registry intents-vault
+all: lint solver-registry
 
-lint:
+lint: intents-vault
 	@cargo fmt --all
 	@cargo clippy --fix --allow-dirty --allow-staged --workspace -- -D warnings
 
@@ -24,8 +24,12 @@ mock-ft:
 	@mkdir -p contracts/mock-ft/res
 	@cp target/near/mock_ft/mock_ft.wasm ./contracts/mock-ft/res/mock_ft.wasm
 
-test: solver-registry intents-vault mock-intents mock-ft
+test: mock-ft mock-intents intents-vault solver-registry
 	cargo test -- --nocapture
+
+clean:
+	@rm -rf contracts/*/res/*.wasm
+	cargo clean
 
 define compile-release
 	@rustup target add wasm32-unknown-unknown
