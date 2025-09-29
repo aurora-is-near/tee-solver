@@ -135,19 +135,6 @@ impl Contract {
             .cloned()
             .unwrap_or_default()
     }
-    //
-    // fn internal_get_mt_balances(
-    //     &mut self,
-    //     token_id: &TokenId,
-    // ) -> &mut LookupMap<AccountId, Balance> {
-    //     if !self.mt_balances.contains_key(token_id) {
-    //         self.mt_balances.insert(
-    //             token_id.clone(),
-    //             LookupMap::new(Prefix::MultiTokenBalancesByTokenId(token_id.clone())),
-    //         );
-    //     }
-    //     self.mt_balances.get_mut(token_id).unwrap()
-    // }
 
     fn internal_deposit_mt_balance(
         &mut self,
