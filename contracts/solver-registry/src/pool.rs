@@ -58,13 +58,6 @@ impl Pool {
     #[must_use]
     pub fn new(token_ids: Vec<AccountId>, fee: u32) -> Self {
         let tokens_len = token_ids.len();
-        require!(tokens_len == 2, "Must have exactly 2 tokens");
-        require!(
-            token_ids[0] != token_ids[1],
-            "The two tokens cannot be identical"
-        );
-        require!(fee < 10_000, "Fee must be less than 100%");
-
         Self {
             token_ids,
             amounts: vec![0; tokens_len],
@@ -78,7 +71,8 @@ impl Pool {
 
     /// Assume the worker is active if there's a ping within the timeout period.
     pub fn has_active_worker(&self, timeout_ms: TimestampMs) -> bool {
-        self.worker_id.is_some() && block_timestamp_ms() < self.last_ping_timestamp_ms + timeout_ms
+        self.worker_id.is_some()
+            && block_timestamp_ms() < self.last_ping_timestamp_ms.saturating_add(timeout_ms)
     }
 }
 
@@ -96,6 +90,12 @@ impl Contract {
             env::attached_deposit() >= CREATE_POOL_STORAGE_DEPOSIT,
             "Not enough attached deposit"
         );
+        require!(token_ids.len() == 2, "Must have exactly 2 tokens");
+        require!(
+            token_ids[0] != token_ids[1],
+            "The two tokens cannot be identical"
+        );
+        require!(fee < 10_000, "Fee must be less than 100%");
 
         // Get new pool ID
         let pool_id = self.pools.len();
@@ -185,7 +185,10 @@ impl Contract {
         _sender_id: &AccountId,
         amount: Balance,
     ) -> PromiseOrValue<U128> {
-        let pool = self.pools.get(pool_id).expect(ERR_POOL_NOT_FOUND);
+        let pool = self
+            .pools
+            .get(pool_id)
+            .unwrap_or_else(|| env::panic_str(ERR_POOL_NOT_FOUND));
 
         require!(pool.token_ids.contains(token_id), ERR_BAD_TOKEN_ID);
         require!(amount > 0, ERR_INVALID_AMOUNT);
