@@ -36,6 +36,7 @@ mod token_receiver;
 pub mod types;
 mod view;
 
+const ONE_YOCTO: NearToken = NearToken::from_yoctonear(1);
 const GAS_ADD_WORKER_KEY: Gas = Gas::from_tgas(20);
 const GAS_REMOVE_WORKER_KEY: Gas = Gas::from_tgas(20);
 const GAS_ADD_WORKER_KEY_CALLBACK: Gas = Gas::from_tgas(10);
@@ -200,7 +201,7 @@ impl Contract {
                 .get(inactive_worker_id)
                 .unwrap_or_else(|| env::panic_str("Worker not registered"));
             ext_intents_vault::ext(Self::get_pool_account_id(pool_id))
-                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .with_attached_deposit(ONE_YOCTO)
                 .with_static_gas(GAS_REMOVE_WORKER_KEY)
                 .with_unused_gas_weight(0)
                 .remove_public_key(
@@ -256,7 +257,7 @@ impl Contract {
                 .unwrap_or_else(|| env::panic_str("Worker not registered"));
             Event::WorkerRemoved {
                 worker_id: inactive_worker_id,
-                pool_id: &pool_id,
+                pool_id,
                 public_key: &inactive_worker.public_key,
                 compose_hash: &inactive_worker.compose_hash,
                 checksum: &inactive_worker.checksum,
@@ -308,7 +309,7 @@ impl Contract {
 
             Event::WorkerRegistered {
                 worker_id: &worker_id,
-                pool_id: &pool_id,
+                pool_id,
                 public_key,
                 compose_hash: &compose_hash,
                 checksum: &checksum,
@@ -344,9 +345,9 @@ impl Contract {
         self.pools.flush();
 
         Event::WorkerPinged {
-            pool_id: &worker.pool_id,
+            pool_id: worker.pool_id,
             worker_id: &worker_id,
-            timestamp_ms: &block_timestamp_ms,
+            timestamp_ms: block_timestamp_ms,
         }
         .emit();
     }
@@ -388,7 +389,7 @@ impl Contract {
     ) -> Promise {
         // Add the public key to the intents vault
         ext_intents_vault::ext(Self::get_pool_account_id(pool_id))
-            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_attached_deposit(ONE_YOCTO)
             .with_static_gas(GAS_ADD_WORKER_KEY)
             .with_unused_gas_weight(0)
             .add_public_key(self.intents_contract_id.clone(), public_key.clone())

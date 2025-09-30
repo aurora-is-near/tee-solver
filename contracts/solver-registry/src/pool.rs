@@ -6,12 +6,15 @@ use near_sdk::{AccountId, Gas, NearToken, PromiseError, PromiseOrValue, near, re
 use crate::events::Event;
 use crate::ext::ext_ft;
 use crate::{
-    Balance, Contract, ContractExt, Prefix, Promise, TimestampMs, block_timestamp_ms, env,
+    Balance, Contract, ContractExt, ONE_YOCTO, Prefix, Promise, TimestampMs, block_timestamp_ms,
+    env,
 };
 
 const CREATE_POOL_STORAGE_DEPOSIT: NearToken =
     NearToken::from_yoctonear(1_500_000_000_000_000_000_000_000); // 1.5 NEAR
+
 const GAS_CREATE_POOL_CALLBACK: Gas = Gas::from_tgas(10);
+const GAS_DEPOSIT_INTO_POOL_CALLBACK: Gas = Gas::from_tgas(5);
 
 const ERR_POOL_NOT_FOUND: &str = "Pool not found";
 const ERR_BAD_TOKEN_ID: &str = "Token doesn't exist in pool";
@@ -55,13 +58,6 @@ impl Pool {
     #[must_use]
     pub fn new(token_ids: Vec<AccountId>, fee: u32) -> Self {
         let tokens_len = token_ids.len();
-        require!(tokens_len == 2, "Must have exactly 2 tokens");
-        require!(
-            token_ids[0] != token_ids[1],
-            "The two tokens cannot be identical"
-        );
-        require!(fee < 10_000, "Fee must be less than 100%");
-
         Self {
             token_ids,
             amounts: vec![0; tokens_len],
@@ -75,7 +71,8 @@ impl Pool {
 
     /// Assume the worker is active if there's a ping within the timeout period.
     pub fn has_active_worker(&self, timeout_ms: TimestampMs) -> bool {
-        self.worker_id.is_some() && block_timestamp_ms() < self.last_ping_timestamp_ms + timeout_ms
+        self.worker_id.is_some()
+            && block_timestamp_ms() < self.last_ping_timestamp_ms.saturating_add(timeout_ms)
     }
 }
 
@@ -93,6 +90,12 @@ impl Contract {
             env::attached_deposit() >= CREATE_POOL_STORAGE_DEPOSIT,
             "Not enough attached deposit"
         );
+        require!(token_ids.len() == 2, "Must have exactly 2 tokens");
+        require!(
+            token_ids[0] != token_ids[1],
+            "The two tokens cannot be identical"
+        );
+        require!(fee < 10_000, "Fee must be less than 100%");
 
         // Get new pool ID
         let pool_id = self.pools.len();
@@ -128,9 +131,9 @@ impl Contract {
             self.pools.flush();
 
             Event::CreateLiquidityPool {
-                pool_id: &pool_id,
+                pool_id,
                 token_ids,
-                fee: &fee,
+                fee,
             }
             .emit();
 
@@ -139,17 +142,31 @@ impl Contract {
     }
 
     #[private]
-    pub const fn on_deposit_into_pool(
+    pub fn on_deposit_into_pool(
         &mut self,
+        pool_id: u32,
+        token_id: &AccountId,
         amount: U128,
-        #[callback_result] used_fund: Result<U128, PromiseError>,
+        #[callback_result] result: Result<U128, PromiseError>,
     ) -> U128 {
-        if let Ok(used_fund) = used_fund {
-            // Refund the unused amount.
-            // ft_transfer_call() returns the used fund
-            U128(amount.0.saturating_sub(used_fund.0))
-        } else {
-            amount
+        match result {
+            Ok(used_fund) => {
+                if used_fund.0 > 0 {
+                    Event::AssetDeposited {
+                        pool_id,
+                        token_id,
+                        amount: &used_fund,
+                    }
+                    .emit();
+                }
+
+                // Refund the unused amount.
+                // ft_transfer_call() returns the used fund
+                U128(amount.0.saturating_sub(used_fund.0))
+            }
+            Err(e) => {
+                env::panic_str(&format!("Error depositing into pool: {e:?}"));
+            }
         }
     }
 }
@@ -168,7 +185,10 @@ impl Contract {
         _sender_id: &AccountId,
         amount: Balance,
     ) -> PromiseOrValue<U128> {
-        let pool = self.pools.get(pool_id).expect(ERR_POOL_NOT_FOUND);
+        let pool = self
+            .pools
+            .get(pool_id)
+            .unwrap_or_else(|| env::panic_str(ERR_POOL_NOT_FOUND));
 
         require!(pool.token_ids.contains(token_id), ERR_BAD_TOKEN_ID);
         require!(amount > 0, ERR_INVALID_AMOUNT);
@@ -176,14 +196,19 @@ impl Contract {
         // deposit the fund into NEAR Intents
         // NEAR Intents docs: https://docs.near-intents.org/near-intents/market-makers/verifier/deposits-and-withdrawals/deposits
         ext_ft::ext(token_id.clone())
-            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_attached_deposit(ONE_YOCTO)
             .ft_transfer_call(
                 self.intents_contract_id.clone(),
                 U128(amount),
                 Some("deposit into pool".to_string()),
                 Self::get_pool_account_id(pool_id).to_string(),
             )
-            .then(Self::ext(env::current_account_id()).on_deposit_into_pool(U128(amount)))
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(GAS_DEPOSIT_INTO_POOL_CALLBACK)
+                    .with_unused_gas_weight(0)
+                    .on_deposit_into_pool(pool_id, token_id, U128(amount)),
+            )
             .into()
     }
 }

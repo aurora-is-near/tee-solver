@@ -1,6 +1,7 @@
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, PromiseOrValue, log, near};
 
+use crate::token::TokenId;
 use crate::{Contract, ContractExt, env};
 
 #[near]
@@ -18,7 +19,9 @@ impl Contract {
                 .unwrap_or_else(|e| env::panic_str(&format!("Invalid message: {e}")))
         };
 
-        let token_id = env::predecessor_account_id();
+        let token_id: TokenId = env::predecessor_account_id().into();
+
+        self.internal_deposit_mt_balance(&receiver_id, &token_id, amount.0);
 
         log!(
             "Deposit {} {} into intents contract for account {}",
