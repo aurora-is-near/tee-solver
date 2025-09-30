@@ -66,7 +66,10 @@ impl Contract {
         amount: U128,
     ) -> PromiseOrValue<U128> {
         assert_one_yocto();
-        let pool = self.pools.get(pool_id).expect("Pool not found");
+        let pool = self
+            .pools
+            .get(pool_id)
+            .unwrap_or_else(|| env::panic_str("Pool not found"));
         require!(pool.token_ids.contains(&token_id), "Invalid token ID");
         // We do not check that the amount does not exceed the pool balance because the solver registry
         // is not tracking the real-time NEAR Intents balance of the pool
