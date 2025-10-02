@@ -119,9 +119,7 @@ impl Contract {
         fee: u32,
         #[callback_result] call_result: Result<(), PromiseError>,
     ) -> Option<u32> {
-        if call_result.is_err() {
-            None
-        } else {
+        call_result.ok().map(|_| {
             // Add the new liquidity pool
             let pool = Pool::new(token_ids.clone(), fee);
             self.pools.push(pool);
@@ -134,8 +132,8 @@ impl Contract {
             }
             .emit();
 
-            Some(pool_id)
-        }
+            pool_id
+        })
     }
 
     #[private]
@@ -144,12 +142,11 @@ impl Contract {
         amount: U128,
         #[callback_result] used_fund: Result<U128, PromiseError>,
     ) -> U128 {
-        if let Ok(used_fund) = used_fund {
+        match used_fund {
             // Refund the unused amount.
             // ft_transfer_call() returns the used fund
-            U128(amount.0.saturating_sub(used_fund.0))
-        } else {
-            amount
+            Ok(used) => U128(amount.0.saturating_sub(used.0)),
+            Err(_) => amount,
         }
     }
 }
