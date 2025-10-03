@@ -40,7 +40,7 @@ const GAS_ADD_WORKER_KEY: Gas = Gas::from_tgas(20);
 const GAS_REMOVE_WORKER_KEY: Gas = Gas::from_tgas(20);
 const GAS_ADD_WORKER_KEY_CALLBACK: Gas = Gas::from_tgas(10);
 const GAS_REMOVE_WORKER_KEY_CALLBACK: Gas = Gas::from_gas(
-    Gas::from_gas(20).as_gas() // 20 Tgas for the callback function itself
+    Gas::from_tgas(20).as_gas() // 20 Tgas for the callback function itself
     + GAS_ADD_WORKER_KEY.as_gas()
     + GAS_ADD_WORKER_KEY_CALLBACK.as_gas(),
 );
