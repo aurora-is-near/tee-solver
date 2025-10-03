@@ -119,7 +119,7 @@ impl Contract {
         fee: u32,
         #[callback_result] call_result: Result<(), PromiseError>,
     ) -> Option<u32> {
-        call_result.ok().map(|_| {
+        call_result.ok().map(|()| {
             // Add the new liquidity pool
             let pool = Pool::new(token_ids.clone(), fee);
             self.pools.push(pool);
