@@ -314,6 +314,8 @@ impl Contract {
                 checksum: &checksum,
             }
             .emit();
+        } else {
+            env::panic_str("Failed to add worker key");
         }
     }
 

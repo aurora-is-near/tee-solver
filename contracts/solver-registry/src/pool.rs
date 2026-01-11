@@ -54,14 +54,9 @@ pub struct PoolInfo {
 impl Pool {
     #[must_use]
     pub fn new(token_ids: Vec<AccountId>, fee: u32) -> Self {
-        let tokens_len = token_ids.len();
-        require!(tokens_len == 2, "Must have exactly 2 tokens");
-        require!(
-            token_ids[0] != token_ids[1],
-            "The two tokens cannot be identical"
-        );
-        require!(fee < 10_000, "Fee must be less than 100%");
+        Self::validate_pool_args(&token_ids, fee);
 
+        let tokens_len = token_ids.len();
         Self {
             token_ids,
             amounts: vec![0; tokens_len],
@@ -71,6 +66,17 @@ impl Pool {
             worker_id: None,
             last_ping_timestamp_ms: 0,
         }
+    }
+
+    /// Validates pool creation arguments
+    pub fn validate_pool_args(token_ids: &[AccountId], fee: u32) {
+        let tokens_len = token_ids.len();
+        require!(tokens_len == 2, "Must have exactly 2 tokens");
+        require!(
+            token_ids[0] != token_ids[1],
+            "The two tokens cannot be identical"
+        );
+        require!(fee < 10_000, "Fee must be less than 100%");
     }
 
     /// Assume the worker is active if there's a ping within the timeout period.
@@ -93,6 +99,9 @@ impl Contract {
             env::attached_deposit() >= CREATE_POOL_STORAGE_DEPOSIT,
             "Not enough attached deposit"
         );
+
+        // Verify arguments before creating the pool
+        Pool::validate_pool_args(&token_ids, fee);
 
         // Get new pool ID
         let pool_id = self.pools.len();
@@ -118,10 +127,8 @@ impl Contract {
         token_ids: &Vec<AccountId>,
         fee: u32,
         #[callback_result] call_result: Result<(), PromiseError>,
-    ) -> Option<u32> {
-        if call_result.is_err() {
-            None
-        } else {
+    ) -> u32 {
+        if call_result.is_ok() {
             // Add the new liquidity pool
             let pool = Pool::new(token_ids.clone(), fee);
             self.pools.push(pool);
@@ -134,7 +141,9 @@ impl Contract {
             }
             .emit();
 
-            Some(pool_id)
+            pool_id
+        } else {
+            env::panic_str("Failed to create liquidity pool account");
         }
     }
 
