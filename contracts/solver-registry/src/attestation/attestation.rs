@@ -81,6 +81,7 @@ impl fmt::Debug for DstackAttestation {
     }
 }
 
+/// Local attestation for testing purposes.
 #[derive(Debug, Clone, Constructor, Serialize, Deserialize, BorshDeserialize, BorshSerialize)]
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
