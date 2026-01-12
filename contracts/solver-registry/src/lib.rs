@@ -85,6 +85,7 @@ pub struct Contract {
 
 /// Returns the current block timestamp in milliseconds.
 /// When the `test` feature is enabled, returns a fixed timestamp
+#[must_use]
 pub fn get_block_timestamp_ms() -> TimestampMs {
     #[cfg(feature = "test")]
     {
