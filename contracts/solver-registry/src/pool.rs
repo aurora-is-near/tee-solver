@@ -94,7 +94,7 @@ impl Contract {
         &mut self,
         token_ids: Vec<AccountId>,
         fee: u32,
-    ) -> PromiseOrValue<Option<u32>> {
+    ) -> PromiseOrValue<u32> {
         require!(
             env::attached_deposit() >= CREATE_POOL_STORAGE_DEPOSIT,
             "Not enough attached deposit"
