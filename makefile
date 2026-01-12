@@ -25,7 +25,7 @@ mock-ft:
 	@cp target/near/mock_ft/mock_ft.wasm ./contracts/mock-ft/res/mock_ft.wasm
 
 test: solver-registry intents-vault mock-intents mock-ft
-	cargo test -- --nocapture
+	cargo test --features test -- --nocapture
 
 define compile-release
 	@rustup target add wasm32-unknown-unknown

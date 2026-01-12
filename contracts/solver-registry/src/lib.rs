@@ -83,6 +83,20 @@ pub struct Contract {
     worker_ping_timeout_ms: TimestampMs,
 }
 
+/// Returns the current block timestamp in milliseconds.
+/// When the `test` feature is enabled, returns a fixed timestamp
+pub fn get_block_timestamp_ms() -> TimestampMs {
+    #[cfg(feature = "test")]
+    {
+        // Fixed timestamp for testing purposes: September 10, 2025 00:00:00 UTC
+        1_725_926_400_000
+    }
+    #[cfg(not(feature = "test"))]
+    {
+        block_timestamp_ms()
+    }
+}
+
 #[near]
 impl Contract {
     #[init]
@@ -163,7 +177,7 @@ impl Contract {
         let expected_report_data = ReportData::new(public_key.clone());
 
         // Get current timestamp in seconds
-        let timestamp_s = block_timestamp_ms() / 1_000;
+        let timestamp_s = get_block_timestamp_ms() / 1_000;
 
         // For now, allow all docker image hashes as we only verify the docker compose hash
         let allowed_docker_image_hashes: Vec<DockerImageHash> = vec![];
