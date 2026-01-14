@@ -24,7 +24,12 @@ mock-ft:
 	@mkdir -p contracts/mock-ft/res
 	@cp target/near/mock_ft/mock_ft.wasm ./contracts/mock-ft/res/mock_ft.wasm
 
-test: solver-registry intents-vault mock-intents mock-ft
+solver-registry-test:
+	$(call compile-release,solver-registry,test)
+	@mkdir -p contracts/solver-registry/res
+	@cp target/near/solver_registry/solver_registry.wasm ./contracts/solver-registry/res/solver_registry.wasm
+
+test: solver-registry-test intents-vault mock-intents mock-ft
 	cargo test --features test -- --nocapture
 
 define compile-release

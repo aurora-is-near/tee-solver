@@ -90,7 +90,7 @@ pub fn get_block_timestamp_ms() -> TimestampMs {
     #[cfg(feature = "test")]
     {
         // Fixed timestamp for testing purposes: September 10, 2025 00:00:00 UTC
-        1_725_926_400_000
+        1_757_462_400_000
     }
     #[cfg(not(feature = "test"))]
     {
