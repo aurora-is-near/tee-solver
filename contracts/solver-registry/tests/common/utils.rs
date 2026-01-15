@@ -475,6 +475,65 @@ pub async fn get_pool_info(
     Ok(pool_info)
 }
 
+// Helper function to get owner ID
+pub async fn get_owner_id(
+    solver_registry: &Contract,
+) -> Result<AccountId, Box<dyn std::error::Error>> {
+    let result = solver_registry.view("get_owner_id").await?;
+    let owner_id: AccountId = serde_json::from_slice(&result.result).unwrap();
+    Ok(owner_id)
+}
+
+// Helper function to get approved compose hashes
+pub async fn get_approved_compose_hashes(
+    solver_registry: &Contract,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let result = solver_registry.view("get_approved_compose_hashes").await?;
+    let approved_compose_hashes: Vec<String> = serde_json::from_slice(&result.result).unwrap();
+    Ok(approved_compose_hashes)
+}
+
+// Helper function to get pool length
+pub async fn get_pool_length(
+    solver_registry: &Contract,
+) -> Result<u32, Box<dyn std::error::Error>> {
+    let result = solver_registry.view("get_pool_length").await?;
+    let pool_length: u32 = serde_json::from_slice(&result.result).unwrap();
+    Ok(pool_length)
+}
+
+// Helper function to get worker length
+pub async fn get_worker_length(
+    solver_registry: &Contract,
+) -> Result<u32, Box<dyn std::error::Error>> {
+    let result = solver_registry.view("get_worker_length").await?;
+    let worker_length: u32 = serde_json::from_slice(&result.result).unwrap();
+    Ok(worker_length)
+}
+
+// Helper function to get workers
+pub async fn get_workers(
+    solver_registry: &Contract,
+    offset: u32,
+    limit: u32,
+) -> Result<Vec<WorkerInfo>, Box<dyn std::error::Error>> {
+    let result = solver_registry
+        .view("get_workers")
+        .args_json(json!({"offset": offset, "limit": limit}))
+        .await?;
+    let workers: Vec<WorkerInfo> = serde_json::from_slice(&result.result).unwrap();
+    Ok(workers)
+}
+
+// Helper function to get worker ping timeout
+pub async fn get_worker_ping_timeout(
+    solver_registry: &Contract,
+) -> Result<u64, Box<dyn std::error::Error>> {
+    let result = solver_registry.view("get_worker_ping_timeout").await?;
+    let worker_ping_timeout: u64 = serde_json::from_slice(&result.result).unwrap();
+    Ok(worker_ping_timeout)
+}
+
 // Helper function to ping as a worker
 pub async fn ping_worker(
     worker: &Account,

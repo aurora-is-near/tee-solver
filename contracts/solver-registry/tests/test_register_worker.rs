@@ -14,7 +14,7 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
 
     // Setup test environment
     let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -74,6 +74,32 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
     .await?;
     let _ = deposit_into_pool(&solver_registry, &funder, 0, &usdc, 50_000_000).await?;
 
+    // Verify get functions
+
+    let owner_id = get_owner_id(&solver_registry).await?;
+    assert_eq!(owner_id, owner.id());
+
+    let approved_compose_hashes = get_approved_compose_hashes(&solver_registry).await?;
+    assert_eq!(approved_compose_hashes.len(), 1);
+    assert_eq!(approved_compose_hashes[0], COMPOSE_HASH);
+
+    let pool_len = get_pool_len(&solver_registry).await?;
+    assert_eq!(pool_len, 1);
+
+    let worker_len = get_worker_len(&solver_registry).await?;
+    assert_eq!(worker_len, 1);
+
+    let workers = get_workers(&solver_registry, 0, 10).await?;
+    assert_eq!(workers.len(), 1);
+    assert_eq!(workers[0].account_id, alice.id());
+    assert_eq!(workers[0].pool_id, 0);
+    assert_eq!(workers[0].checksum, CHECKSUM_ALICE);
+    assert_eq!(workers[0].compose_hash, COMPOSE_HASH);
+    assert_eq!(workers[0].tcb_info, TCB_INFO_ALICE);
+
+    let worker_ping_timeout_ms: u64 = get_worker_ping_timeout(&solver_registry).await?;
+    assert_eq!(worker_ping_timeout_ms, DEFAULT_WORKER_PING_TIMEOUT_MS);
+
     println!("Test passed: Worker registration and pool setup completed successfully");
 
     Ok(())
@@ -87,7 +113,7 @@ async fn test_worker_registration_with_invalid_tee_data() -> Result<(), Box<dyn 
 
     // Setup test environment
     let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -130,7 +156,7 @@ async fn test_worker_registration_requires_sufficient_deposit()
 
     // Setup test environment
     let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -176,7 +202,7 @@ async fn test_worker_registration_without_compose_hash_approval()
 
     // Setup test environment
     let (wnear, usdc, _owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -206,7 +232,7 @@ async fn test_approve_compose_hash_with_non_owner() -> Result<(), Box<dyn std::e
 
     // Setup test environment
     let (wnear, usdc, _owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -242,7 +268,7 @@ async fn test_worker_registration_with_invalid_pool_id() -> Result<(), Box<dyn s
 
     // Setup test environment
     let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool (pool_id = 0)
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -275,7 +301,7 @@ async fn test_multiple_pools_worker_registration() -> Result<(), Box<dyn std::er
 
     // Setup test environment
     let (wnear, usdc, owner, alice, bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create multiple liquidity pools
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -350,7 +376,7 @@ async fn test_worker_registration_edge_cases() -> Result<(), Box<dyn std::error:
 
     // Setup test environment
     let (wnear, usdc, owner, alice, bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;

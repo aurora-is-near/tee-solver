@@ -10,7 +10,7 @@ async fn test_only_one_active_worker_per_pool() -> Result<(), Box<dyn std::error
 
     // Setup test environment
     let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -122,7 +122,7 @@ async fn test_worker_ping_functionality() -> Result<(), Box<dyn std::error::Erro
 
     // Setup test environment
     let (wnear, usdc, owner, alice, bob, mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -855,7 +855,7 @@ async fn test_worker_ping_without_registration() -> Result<(), Box<dyn std::erro
 
     // Setup test environment
     let (wnear, usdc, _owner, alice, _bob, mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
