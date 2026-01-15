@@ -68,13 +68,10 @@ async fn test_create_liquidity_pool_parallel_failure() -> Result<(), Box<dyn std
     let result2 = result2?;
 
     // One should succeed, one should fail
-    let success_count = result1.is_success() as u32 + result2.is_success() as u32;
-    let failure_count = (!result1.is_success() as u32) + (!result2.is_success() as u32);
+    let success_count = u32::from(result1.is_success()) + u32::from(result2.is_success());
+    let failure_count = u32::from(!result1.is_success()) + u32::from(!result2.is_success());
 
-    println!(
-        "Success count: {}, Failure count: {}",
-        success_count, failure_count
-    );
+    println!("Success count: {success_count}, Failure count: {failure_count}");
 
     // At least one should fail
     assert!(
