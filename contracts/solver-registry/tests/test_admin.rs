@@ -173,7 +173,7 @@ async fn test_upgrade_contract() -> Result<(), Box<dyn std::error::Error>> {
     let result = owner
         .call(solver_registry.id(), "upgrade")
         .args(contract_wasm)
-        .deposit(NearToken::from_yoctonear(0))
+        .deposit(NearToken::from_yoctonear(1))
         .max_gas()
         .transact()
         .await?;

@@ -1,4 +1,5 @@
 use crate::{Contract, ContractExt};
+use near_plugins::{AccessControllable, access_control_any};
 
 use near_sdk::{
     AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
@@ -17,8 +18,8 @@ impl Contract {
         env::state_read::<Self>().unwrap_or_else(|| env::panic_str("Failed to read contract state"))
     }
 
+    #[access_control_any(roles(Role::Owner))]
     pub fn upgrade(&mut self) -> PromiseOrValue<AccountId> {
-        self.assert_owner();
         let code = env::input().unwrap_or_else(|| env::panic_str("Code not found"));
         Promise::new(env::current_account_id())
             .deploy_contract(code)
