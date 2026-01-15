@@ -89,7 +89,8 @@ pub struct Contract {
 pub fn get_block_timestamp_ms() -> TimestampMs {
     #[cfg(feature = "test")]
     {
-        // Fixed timestamp for testing purposes: September 10, 2025 00:00:00 UTC
+        // The quotes for testing under tests/samples are retrieved from TEE on Sep 2, 2025
+        // To make the verification pass in test, we use a fixed timestamp Sep 10, 2025 00:00:00 UTC
         1_757_462_400_000
     }
     #[cfg(not(feature = "test"))]
