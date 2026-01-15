@@ -1,3 +1,4 @@
+use near_sdk::NearToken;
 use near_sdk::serde_json::json;
 
 mod common;
