@@ -34,6 +34,7 @@ mod ext;
 pub mod pool;
 mod token_receiver;
 pub mod types;
+mod upgrade;
 mod view;
 
 const GAS_ADD_WORKER_KEY: Gas = Gas::from_tgas(20);

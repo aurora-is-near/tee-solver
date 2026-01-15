@@ -1,12 +1,11 @@
-use crate::{Contract, ContractExt};
+use crate::{Contract, ContractExt, Role};
 use near_plugins::{AccessControllable, access_control_any};
 
 use near_sdk::{
-    AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
-    near_bindgen,
+    AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, assert_one_yocto, env, near,
 };
 
-#[near_bindgen]
+#[near]
 impl Contract {
     #[init(ignore_state)]
     #[payable]
