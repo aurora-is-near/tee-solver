@@ -1,6 +1,6 @@
 use near_gas::NearGas;
 use near_sdk::NearToken;
-use near_sdk::serde_json::json;
+use near_sdk::serde_json::{self, json};
 
 mod common;
 

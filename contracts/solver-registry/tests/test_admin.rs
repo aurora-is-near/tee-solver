@@ -11,7 +11,7 @@ async fn test_remove_compose_hash() -> Result<(), Box<dyn std::error::Error>> {
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
+    let (wnear, usdc, owner, _alice, _bob, _mock_intents, solver_registry) =
         setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
