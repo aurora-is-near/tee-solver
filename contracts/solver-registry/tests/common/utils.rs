@@ -475,11 +475,14 @@ pub async fn get_pool_info(
     Ok(pool_info)
 }
 
-// Helper function to get owner ID
+// Helper function to get owner IDs
 pub async fn get_owners(
     solver_registry: &Contract,
 ) -> Result<Vec<AccountId>, Box<dyn std::error::Error>> {
-    let result = solver_registry.view("acl_get_super_admins").await?;
+    let result = solver_registry
+        .view("acl_get_super_admins")
+        .args_json(json!({}))
+        .await?;
     let owners: Vec<AccountId> = serde_json::from_slice(&result.result).unwrap();
     Ok(owners)
 }
