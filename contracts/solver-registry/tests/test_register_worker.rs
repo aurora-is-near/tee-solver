@@ -164,6 +164,55 @@ async fn test_worker_registration_with_invalid_tee_data() -> Result<(), Box<dyn 
 }
 
 #[tokio::test]
+async fn test_worker_registration_with_invalid_app_compose_json()
+-> Result<(), Box<dyn std::error::Error>> {
+    println!("Starting test for worker registration with invalid app_compose JSON...");
+    let sandbox = near_workspaces::sandbox().await?;
+
+    // Setup test environment
+    let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
+
+    // Create a liquidity pool
+    create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
+
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
+
+    // Create invalid TCB info with malformed app_compose JSON
+    // Parse the valid TCB info and modify app_compose to be invalid JSON
+    let mut tcb_info: serde_json::Value = serde_json::from_str(TCB_INFO_ALICE)?;
+    tcb_info["app_compose"] = serde_json::Value::String("invalid json {".to_string());
+    let invalid_tcb_info = serde_json::to_string(&tcb_info)?;
+
+    // Try to register worker with invalid app_compose JSON
+    println!("Attempting to register worker with invalid app_compose JSON...");
+    let result = register_worker(
+        &alice,
+        &solver_registry,
+        0,
+        QUOTE_HEX_ALICE,
+        QUOTE_COLLATERAL_ALICE,
+        CHECKSUM_ALICE,
+        &invalid_tcb_info,
+    )
+    .await?;
+
+    // Registration should fail with invalid app_compose JSON
+    assert!(
+        !result.is_success(),
+        "Worker registration should fail with invalid app_compose JSON"
+    );
+
+    let error = result.into_result().unwrap_err();
+    println!("Expected error received: {error:?}");
+
+    println!("Test passed: Worker registration properly validates app_compose JSON");
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn test_worker_registration_requires_sufficient_deposit()
 -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker registration requires sufficient deposit...");
