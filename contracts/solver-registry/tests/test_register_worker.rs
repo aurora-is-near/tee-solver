@@ -76,7 +76,7 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
 
     // Verify get functions
 
-    let owners = get_owners(&solver_registry).await?;
+    let owners = get_owners(&solver_registry, 0, 100).await?;
     assert_eq!(owners.len(), 1, "Incorrect number of owners");
     assert_eq!(owners[0], owner.id().clone(), "Incorrect owner ID");
 

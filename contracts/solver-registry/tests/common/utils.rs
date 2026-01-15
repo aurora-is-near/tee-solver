@@ -478,10 +478,15 @@ pub async fn get_pool_info(
 // Helper function to get owner IDs
 pub async fn get_owners(
     solver_registry: &Contract,
+    skip: u64,
+    limit: u64,
 ) -> Result<Vec<AccountId>, Box<dyn std::error::Error>> {
     let result = solver_registry
         .view("acl_get_super_admins")
-        .args_json(json!({}))
+        .args_json(json!({
+            "skip": skip,
+            "limit": limit
+        }))
         .await?;
     let owners: Vec<AccountId> = serde_json::from_slice(&result.result).unwrap();
     Ok(owners)
