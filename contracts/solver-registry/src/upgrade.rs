@@ -30,7 +30,7 @@ impl Contract {
                 GasWeight(1),
             )
             .function_call_weight(
-                "get_owner_id".into(),
+                "owner_get".into(),
                 vec![],
                 NearToken::ZERO,
                 Gas::from_tgas(10),

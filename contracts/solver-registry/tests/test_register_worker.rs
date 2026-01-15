@@ -77,26 +77,42 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
     // Verify get functions
 
     let owner_id = get_owner_id(&solver_registry).await?;
-    assert_eq!(owner_id, owner.id().clone());
+    assert_eq!(owner_id, owner.id().clone(), "Incorrect owner ID");
 
     let approved_compose_hashes = get_approved_compose_hashes(&solver_registry).await?;
-    assert_eq!(approved_compose_hashes.len(), 1);
-    assert_eq!(approved_compose_hashes[0], COMPOSE_HASH);
+    assert_eq!(
+        approved_compose_hashes.len(),
+        1,
+        "Incorrect number of approved compose hashes"
+    );
+    assert_eq!(
+        approved_compose_hashes[0], COMPOSE_HASH,
+        "Incorrect approved compose hash"
+    );
 
     let pool_len = get_pool_len(&solver_registry).await?;
-    assert_eq!(pool_len, 1);
+    assert_eq!(pool_len, 1, "Incorrect pool length");
 
     let worker_len = get_worker_len(&solver_registry).await?;
-    assert_eq!(worker_len, 1);
+    assert_eq!(worker_len, 1, "Incorrect worker length");
 
     let workers = get_workers(&solver_registry, 0, 10).await?;
-    assert_eq!(workers.len(), 1);
-    assert_eq!(workers[0].pool_id, 0);
-    assert_eq!(workers[0].checksum, CHECKSUM_ALICE);
-    assert_eq!(workers[0].compose_hash, COMPOSE_HASH);
+    assert_eq!(workers.len(), 1, "Incorrect number of workers");
+    assert_eq!(workers[0].pool_id, 0, "Incorrect worker pool ID");
+    assert_eq!(
+        workers[0].checksum, CHECKSUM_ALICE,
+        "Incorrect worker checksum"
+    );
+    assert_eq!(
+        workers[0].compose_hash, COMPOSE_HASH,
+        "Incorrect worker compose hash"
+    );
 
     let worker_ping_timeout_ms: u64 = get_worker_ping_timeout_ms(&solver_registry).await?;
-    assert_eq!(worker_ping_timeout_ms, DEFAULT_WORKER_PING_TIMEOUT_MS);
+    assert_eq!(
+        worker_ping_timeout_ms, DEFAULT_WORKER_PING_TIMEOUT_MS,
+        "Incorrect worker ping timeout"
+    );
 
     println!("Test passed: Worker registration and pool setup completed successfully");
 

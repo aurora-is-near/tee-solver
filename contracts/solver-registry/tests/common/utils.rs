@@ -479,7 +479,7 @@ pub async fn get_pool_info(
 pub async fn get_owner_id(
     solver_registry: &Contract,
 ) -> Result<AccountId, Box<dyn std::error::Error>> {
-    let result = solver_registry.view("get_owner_id").await?;
+    let result = solver_registry.view("owner_get").await?;
     let owner_id: AccountId = serde_json::from_slice(&result.result).unwrap();
     Ok(owner_id)
 }
@@ -494,18 +494,14 @@ pub async fn get_approved_compose_hashes(
 }
 
 // Helper function to get pool length
-pub async fn get_pool_len(
-    solver_registry: &Contract,
-) -> Result<u32, Box<dyn std::error::Error>> {
+pub async fn get_pool_len(solver_registry: &Contract) -> Result<u32, Box<dyn std::error::Error>> {
     let result = solver_registry.view("get_pool_len").await?;
     let pool_length: u32 = serde_json::from_slice(&result.result).unwrap();
     Ok(pool_length)
 }
 
 // Helper function to get worker length
-pub async fn get_worker_len(
-    solver_registry: &Contract,
-) -> Result<u32, Box<dyn std::error::Error>> {
+pub async fn get_worker_len(solver_registry: &Contract) -> Result<u32, Box<dyn std::error::Error>> {
     let result = solver_registry.view("get_worker_len").await?;
     let worker_length: u32 = serde_json::from_slice(&result.result).unwrap();
     Ok(worker_length)
