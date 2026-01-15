@@ -173,7 +173,7 @@ async fn test_upgrade_contract() -> Result<(), Box<dyn std::error::Error>> {
     let result = owner
         .call(solver_registry.id(), "upgrade")
         .args(contract_wasm)
-        .deposit(NearToken::from_yoctonear(1))
+        .deposit(NearToken::from_yoctonear(0))
         .max_gas()
         .transact()
         .await?;
@@ -196,10 +196,7 @@ async fn test_upgrade_contract() -> Result<(), Box<dyn std::error::Error>> {
 
     // Verify we can still query approved compose hashes
     let approved_hashes = get_approved_compose_hashes(&solver_registry).await?;
-    println!(
-        "Approved compose hashes after upgrade: {:?}",
-        approved_hashes
-    );
+    println!("Approved compose hashes after upgrade: {approved_hashes:?}");
 
     // Verify we can still get worker ping timeout
     let timeout = get_worker_ping_timeout_ms(&solver_registry).await?;
