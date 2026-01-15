@@ -76,8 +76,9 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
 
     // Verify get functions
 
-    // let owner_id = get_owner_id(&solver_registry).await?;
-    // assert_eq!(owner_id, owner.id().clone(), "Incorrect owner ID");
+    let owners = get_owners(&solver_registry).await?;
+    assert_eq!(owners.len(), 1, "Incorrect number of owners");
+    assert_eq!(owners[0], owner.id().clone(), "Incorrect owner ID");
 
     let approved_compose_hashes = get_approved_compose_hashes(&solver_registry).await?;
     assert_eq!(
