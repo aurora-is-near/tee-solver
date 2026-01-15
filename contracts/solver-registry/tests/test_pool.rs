@@ -1,4 +1,3 @@
-use near_gas::NearGas;
 use near_sdk::NearToken;
 use near_sdk::serde_json::json;
 use tokio::join;
@@ -14,31 +13,36 @@ async fn test_create_liquidity_pool_parallel_failure() -> Result<(), Box<dyn std
     let sandbox = near_workspaces::sandbox().await?;
 
     // Setup test environment
-    let (wnear, usdc, owner, _alice, _bob, _mock_intents, solver_registry) =
+    let (wnear, usdc, _owner, _alice, _bob, _mock_intents, solver_registry) =
         setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Make two parallel calls to create_liquidity_pool
     // Both will try to create pool-0.{contract_id} because they both read pools.len() as 0
     println!("Making two parallel create_liquidity_pool calls...");
 
-    let solver_registry_id = solver_registry.id().clone();
     let wnear_id = wnear.id().clone();
     let usdc_id = usdc.id().clone();
     let deposit = NearToken::from_yoctonear(1_500_000_000_000_000_000_000_000); // 1.5 NEAR
 
-    // Clone the contract reference for parallel access
+    // Clone the contract reference and IDs for parallel access
     let solver_registry1 = solver_registry.clone();
     let solver_registry2 = solver_registry.clone();
+    let wnear_id1 = wnear_id.clone();
+    let usdc_id1 = usdc_id.clone();
+    let wnear_id2 = wnear_id.clone();
+    let usdc_id2 = usdc_id.clone();
+    let deposit1 = deposit;
+    let deposit2 = deposit;
 
     // Create two parallel tasks that both try to create pool with ID 0
     let call1 = async move {
         solver_registry1
             .call("create_liquidity_pool")
             .args_json(json!({
-                "token_ids": [wnear_id.clone(), usdc_id.clone()],
+                "token_ids": [wnear_id1, usdc_id1],
                 "fee": 300
             }))
-            .deposit(deposit)
+            .deposit(deposit1)
             .max_gas()
             .transact()
             .await
@@ -48,10 +52,10 @@ async fn test_create_liquidity_pool_parallel_failure() -> Result<(), Box<dyn std
         solver_registry2
             .call("create_liquidity_pool")
             .args_json(json!({
-                "token_ids": [wnear_id.clone(), usdc_id.clone()],
+                "token_ids": [wnear_id2, usdc_id2],
                 "fee": 300
             }))
-            .deposit(deposit)
+            .deposit(deposit2)
             .max_gas()
             .transact()
             .await
