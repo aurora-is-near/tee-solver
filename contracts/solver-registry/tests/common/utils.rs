@@ -378,6 +378,27 @@ pub async fn approve_compose_hash(
     Ok(())
 }
 
+// Helper function to remove compose hash
+pub async fn remove_compose_hash(
+    owner: &Account,
+    solver_registry: &Contract,
+    compose_hash: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let result = owner
+        .call(solver_registry.id(), "remove_compose_hash")
+        .args_json(json!({
+            "compose_hash": compose_hash.to_string()
+        }))
+        .transact()
+        .await?;
+    assert!(
+        result.is_success(),
+        "{:#?}",
+        result.into_result().unwrap_err()
+    );
+    Ok(())
+}
+
 // Helper function to register a worker
 pub async fn register_worker(
     worker: &Account,
