@@ -83,10 +83,10 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(approved_compose_hashes.len(), 1);
     assert_eq!(approved_compose_hashes[0], COMPOSE_HASH);
 
-    let pool_len = get_pool_length(&solver_registry).await?;
+    let pool_len = get_pool_len(&solver_registry).await?;
     assert_eq!(pool_len, 1);
 
-    let worker_len = get_worker_length(&solver_registry).await?;
+    let worker_len = get_worker_len(&solver_registry).await?;
     assert_eq!(worker_len, 1);
 
     let workers = get_workers(&solver_registry, 0, 10).await?;
@@ -95,7 +95,7 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(workers[0].checksum, CHECKSUM_ALICE);
     assert_eq!(workers[0].compose_hash, COMPOSE_HASH);
 
-    let worker_ping_timeout_ms: u64 = get_worker_ping_timeout(&solver_registry).await?;
+    let worker_ping_timeout_ms: u64 = get_worker_ping_timeout_ms(&solver_registry).await?;
     assert_eq!(worker_ping_timeout_ms, DEFAULT_WORKER_PING_TIMEOUT_MS);
 
     println!("Test passed: Worker registration and pool setup completed successfully");

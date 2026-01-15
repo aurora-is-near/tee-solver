@@ -494,19 +494,19 @@ pub async fn get_approved_compose_hashes(
 }
 
 // Helper function to get pool length
-pub async fn get_pool_length(
+pub async fn get_pool_len(
     solver_registry: &Contract,
 ) -> Result<u32, Box<dyn std::error::Error>> {
-    let result = solver_registry.view("get_pool_length").await?;
+    let result = solver_registry.view("get_pool_len").await?;
     let pool_length: u32 = serde_json::from_slice(&result.result).unwrap();
     Ok(pool_length)
 }
 
 // Helper function to get worker length
-pub async fn get_worker_length(
+pub async fn get_worker_len(
     solver_registry: &Contract,
 ) -> Result<u32, Box<dyn std::error::Error>> {
-    let result = solver_registry.view("get_worker_length").await?;
+    let result = solver_registry.view("get_worker_len").await?;
     let worker_length: u32 = serde_json::from_slice(&result.result).unwrap();
     Ok(worker_length)
 }
@@ -526,12 +526,12 @@ pub async fn get_workers(
 }
 
 // Helper function to get worker ping timeout
-pub async fn get_worker_ping_timeout(
+pub async fn get_worker_ping_timeout_ms(
     solver_registry: &Contract,
 ) -> Result<u64, Box<dyn std::error::Error>> {
-    let result = solver_registry.view("get_worker_ping_timeout").await?;
-    let worker_ping_timeout: u64 = serde_json::from_slice(&result.result).unwrap();
-    Ok(worker_ping_timeout)
+    let result = solver_registry.view("get_worker_ping_timeout_ms").await?;
+    let worker_ping_timeout_ms: u64 = serde_json::from_slice(&result.result).unwrap();
+    Ok(worker_ping_timeout_ms)
 }
 
 // Helper function to ping as a worker
