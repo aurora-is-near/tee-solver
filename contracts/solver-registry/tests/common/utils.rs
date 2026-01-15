@@ -479,7 +479,7 @@ pub async fn get_pool_info(
 pub async fn get_owner_id(
     solver_registry: &Contract,
 ) -> Result<AccountId, Box<dyn std::error::Error>> {
-    let result = solver_registry.view("owner_get").await?;
+    let result = solver_registry.view("owner_get_owner").await?;
     let owner_id: AccountId = serde_json::from_slice(&result.result).unwrap();
     Ok(owner_id)
 }
