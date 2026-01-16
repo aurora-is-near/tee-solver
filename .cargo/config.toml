@@ -1,5 +1,4 @@
 [build]
-# Reduce memory usage during linking
 [target.'cfg(target_os = "linux")']
 rustflags = [
     # Reduce memory usage during linking

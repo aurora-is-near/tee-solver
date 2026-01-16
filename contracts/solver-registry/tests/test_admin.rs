@@ -165,7 +165,7 @@ async fn test_upgrade_contract() -> Result<(), Box<dyn std::error::Error>> {
 
     // Read the contract WASM file
     let contract_wasm = std::fs::read(common::utils::SOLVER_REGISTRY_CONTRACT_WASM)
-        .expect("Contract WASM file not found");
+        .expect("Contract WASM file not found. Please build the contract first.");
 
     println!("Calling upgrade function...");
     // Call upgrade with the contract code
@@ -224,7 +224,7 @@ async fn test_upgrade_contract_with_non_owner() -> Result<(), Box<dyn std::error
 
     // Read the contract WASM file
     let contract_wasm = std::fs::read(common::utils::SOLVER_REGISTRY_CONTRACT_WASM)
-        .expect("Contract WASM file not found");
+        .expect("Contract WASM file not found. Please build the contract first.");
 
     // Try to upgrade with non-owner (Alice)
     println!("Attempting to upgrade contract with non-owner...");
