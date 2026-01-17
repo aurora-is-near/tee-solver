@@ -9,7 +9,7 @@ use near_sdk::{
     AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseError, PublicKey, assert_one_yocto,
     borsh::BorshDeserialize,
     env::{self, block_timestamp_ms, sha256},
-    near, require,
+    log, near, require,
     store::{IterableMap, IterableSet, Vector},
 };
 use std::str::FromStr;
@@ -386,7 +386,7 @@ impl Contract {
         let app_compose: AppCompose = match near_sdk::serde_json::from_str(&tcb_info.app_compose) {
             Ok(compose) => compose,
             Err(e) => {
-                tracing::error!("Failed to parse app_compose JSON: {:?}", e);
+                log!("Failed to parse app_compose JSON: {:?}", e);
                 return None;
             }
         };
