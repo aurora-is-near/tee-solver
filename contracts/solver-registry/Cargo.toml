@@ -34,7 +34,7 @@ container_build_command = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 borsh = { version = "1", features = ["derive", "unstable__schema"] }
-dcap-qvl = { version = "0.3", default-features = false, features = ["contract", "borsh", "std"] }
+dcap-qvl = { version = "0.3.10", default-features = false, features = ["contract", "borsh", "std"] }
 derive_more = { version = "2", features = [
     "from",
     "deref",

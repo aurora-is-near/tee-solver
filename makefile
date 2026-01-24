@@ -1,4 +1,4 @@
-all: lint solver-registry intents-vault
+all: lint intents-vault solver-registry
 
 lint:
 	@cargo fmt --all
@@ -29,7 +29,7 @@ solver-registry-test:
 	@mkdir -p contracts/solver-registry/res
 	@cp target/near/solver_registry/solver_registry.wasm ./contracts/solver-registry/res/solver_registry.wasm
 
-test: solver-registry-test intents-vault mock-intents mock-ft
+test: intents-vault solver-registry-test mock-intents mock-ft
 	cargo test --features test -- --nocapture
 
 define compile-release
