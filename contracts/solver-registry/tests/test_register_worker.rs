@@ -34,12 +34,12 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
     let result = register_worker_alice(&alice, &solver_registry, 0).await?;
 
     // Print result with gas cost
-    let gas_burnt = result.total_gas_burnt();
+    // let gas_burnt = result.total_gas_burnt();
     println!("Result: {:#?}", result);
-    println!(
-        "Total gas burnt: {} TGas",
-        gas_burnt.as_gas() / 1_000_000_000_000
-    );
+    // println!(
+    //     "Total gas burnt: {} TGas",
+    //     gas_burnt.as_gas() / 1_000_000_000_000
+    // );
 
     assert!(
         result.is_success(),
