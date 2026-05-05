@@ -9,7 +9,7 @@ use near_sdk::{
     AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseError, PublicKey, assert_one_yocto,
     borsh::BorshDeserialize,
     env::{self, block_timestamp_ms, sha256},
-    near, require,
+    log, near, require,
     store::{IterableMap, IterableSet, Vector},
 };
 use std::str::FromStr;
@@ -34,6 +34,7 @@ mod ext;
 pub mod pool;
 mod token_receiver;
 pub mod types;
+mod upgrade;
 mod view;
 
 const GAS_ADD_WORKER_KEY: Gas = Gas::from_tgas(20);
@@ -81,6 +82,22 @@ pub struct Contract {
     approved_compose_hashes: IterableSet<String>,
     worker_by_account_id: IterableMap<AccountId, Worker>,
     worker_ping_timeout_ms: TimestampMs,
+}
+
+/// Returns the current block timestamp in milliseconds.
+/// When the `test` feature is enabled, returns a fixed timestamp
+#[must_use]
+pub fn get_block_timestamp_ms() -> TimestampMs {
+    #[cfg(feature = "test")]
+    {
+        // The quotes for testing under tests/samples are retrieved from TEE on Sep 2, 2025
+        // To make the verification pass in test, we use a fixed timestamp Sep 10, 2025 00:00:00 UTC
+        1_757_462_400_000
+    }
+    #[cfg(not(feature = "test"))]
+    {
+        block_timestamp_ms()
+    }
 }
 
 #[near]
@@ -163,7 +180,7 @@ impl Contract {
         let expected_report_data = ReportData::new(public_key.clone());
 
         // Get current timestamp in seconds
-        let timestamp_s = block_timestamp_ms() / 1_000;
+        let timestamp_s = get_block_timestamp_ms() / 1_000;
 
         // For now, allow all docker image hashes as we only verify the docker compose hash
         let allowed_docker_image_hashes: Vec<DockerImageHash> = vec![];
@@ -314,6 +331,8 @@ impl Contract {
                 checksum: &checksum,
             }
             .emit();
+        } else {
+            env::panic_str("Failed to add worker key");
         }
     }
 
@@ -367,7 +386,7 @@ impl Contract {
         let app_compose: AppCompose = match near_sdk::serde_json::from_str(&tcb_info.app_compose) {
             Ok(compose) => compose,
             Err(e) => {
-                tracing::error!("Failed to parse app_compose JSON: {:?}", e);
+                log!("Failed to parse app_compose JSON: {:?}", e);
                 return None;
             }
         };

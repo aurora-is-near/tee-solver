@@ -1,4 +1,4 @@
-all: lint solver-registry intents-vault
+all: lint intents-vault solver-registry
 
 lint:
 	@cargo fmt --all
@@ -24,8 +24,13 @@ mock-ft:
 	@mkdir -p contracts/mock-ft/res
 	@cp target/near/mock_ft/mock_ft.wasm ./contracts/mock-ft/res/mock_ft.wasm
 
-test: solver-registry intents-vault mock-intents mock-ft
-	cargo test -- --nocapture
+solver-registry-test:
+	$(call compile-release,solver-registry,test)
+	@mkdir -p contracts/solver-registry/res
+	@cp target/near/solver_registry/solver_registry.wasm ./contracts/solver-registry/res/solver_registry.wasm
+
+test: intents-vault solver-registry-test mock-intents mock-ft
+	cargo test --features test -- --nocapture
 
 define compile-release
 	@rustup target add wasm32-unknown-unknown

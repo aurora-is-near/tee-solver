@@ -1,0 +1,12 @@
+[build]
+[target.'cfg(target_os = "linux")']
+rustflags = [
+    # Reduce memory usage during linking
+    "-C", "link-arg=-Wl,--no-keep-memory",
+]
+
+[profile.test]
+# Optimize tests slightly to reduce memory usage during compilation
+# Keep debug info for test debugging
+opt-level = 1
+debug = true

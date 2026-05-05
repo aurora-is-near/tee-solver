@@ -378,6 +378,27 @@ pub async fn approve_compose_hash(
     Ok(())
 }
 
+// Helper function to remove compose hash
+pub async fn remove_compose_hash(
+    owner: &Account,
+    solver_registry: &Contract,
+    compose_hash: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let result = owner
+        .call(solver_registry.id(), "remove_compose_hash")
+        .args_json(json!({
+            "compose_hash": compose_hash.to_string()
+        }))
+        .transact()
+        .await?;
+    assert!(
+        result.is_success(),
+        "{:#?}",
+        result.into_result().unwrap_err()
+    );
+    Ok(())
+}
+
 // Helper function to register a worker
 pub async fn register_worker(
     worker: &Account,
@@ -473,6 +494,69 @@ pub async fn get_pool_info(
         .await?;
     let pool_info: PoolInfo = serde_json::from_slice(&result.result).unwrap();
     Ok(pool_info)
+}
+
+// Helper function to get owner IDs
+pub async fn get_owners(
+    solver_registry: &Contract,
+    skip: u64,
+    limit: u64,
+) -> Result<Vec<AccountId>, Box<dyn std::error::Error>> {
+    let result = solver_registry
+        .view("acl_get_super_admins")
+        .args_json(json!({
+            "skip": skip,
+            "limit": limit
+        }))
+        .await?;
+    let owners: Vec<AccountId> = serde_json::from_slice(&result.result).unwrap();
+    Ok(owners)
+}
+
+// Helper function to get approved compose hashes
+pub async fn get_approved_compose_hashes(
+    solver_registry: &Contract,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let result = solver_registry.view("get_approved_compose_hashes").await?;
+    let approved_compose_hashes: Vec<String> = serde_json::from_slice(&result.result).unwrap();
+    Ok(approved_compose_hashes)
+}
+
+// Helper function to get pool length
+pub async fn get_pool_len(solver_registry: &Contract) -> Result<u32, Box<dyn std::error::Error>> {
+    let result = solver_registry.view("get_pool_len").await?;
+    let pool_length: u32 = serde_json::from_slice(&result.result).unwrap();
+    Ok(pool_length)
+}
+
+// Helper function to get worker length
+pub async fn get_worker_len(solver_registry: &Contract) -> Result<u32, Box<dyn std::error::Error>> {
+    let result = solver_registry.view("get_worker_len").await?;
+    let worker_length: u32 = serde_json::from_slice(&result.result).unwrap();
+    Ok(worker_length)
+}
+
+// Helper function to get workers
+pub async fn get_workers(
+    solver_registry: &Contract,
+    offset: u32,
+    limit: u32,
+) -> Result<Vec<WorkerInfo>, Box<dyn std::error::Error>> {
+    let result = solver_registry
+        .view("get_workers")
+        .args_json(json!({"offset": offset, "limit": limit}))
+        .await?;
+    let workers: Vec<WorkerInfo> = serde_json::from_slice(&result.result).unwrap();
+    Ok(workers)
+}
+
+// Helper function to get worker ping timeout
+pub async fn get_worker_ping_timeout_ms(
+    solver_registry: &Contract,
+) -> Result<u64, Box<dyn std::error::Error>> {
+    let result = solver_registry.view("get_worker_ping_timeout_ms").await?;
+    let worker_ping_timeout_ms: u64 = serde_json::from_slice(&result.result).unwrap();
+    Ok(worker_ping_timeout_ms)
 }
 
 // Helper function to ping as a worker
