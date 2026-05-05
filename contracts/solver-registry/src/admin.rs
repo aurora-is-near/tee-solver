@@ -19,7 +19,7 @@ impl Contract {
         .emit();
     }
 
-    /// Remove an approved docker compose has
+    /// Remove an approved docker compose hash
     #[access_control_any(roles(Role::Owner))]
     pub fn remove_compose_hash(&mut self, compose_hash: String) {
         DockerComposeHash::try_from_hex(&compose_hash)

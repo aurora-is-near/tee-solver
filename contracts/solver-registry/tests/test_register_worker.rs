@@ -1,6 +1,6 @@
 use near_gas::NearGas;
 use near_sdk::NearToken;
-use near_sdk::serde_json::json;
+use near_sdk::serde_json::{self, json};
 
 mod common;
 
@@ -14,7 +14,7 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
 
     // Setup test environment
     let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -74,6 +74,47 @@ async fn test_register_one_worker() -> Result<(), Box<dyn std::error::Error>> {
     .await?;
     let _ = deposit_into_pool(&solver_registry, &funder, 0, &usdc, 50_000_000).await?;
 
+    // Verify get functions
+
+    let owners = get_owners(&solver_registry, 0, 100).await?;
+    assert_eq!(owners.len(), 1, "Incorrect number of owners");
+    assert_eq!(owners[0], owner.id().clone(), "Incorrect owner ID");
+
+    let approved_compose_hashes = get_approved_compose_hashes(&solver_registry).await?;
+    assert_eq!(
+        approved_compose_hashes.len(),
+        1,
+        "Incorrect number of approved compose hashes"
+    );
+    assert_eq!(
+        approved_compose_hashes[0], COMPOSE_HASH,
+        "Incorrect approved compose hash"
+    );
+
+    let pool_len = get_pool_len(&solver_registry).await?;
+    assert_eq!(pool_len, 1, "Incorrect pool length");
+
+    let worker_len = get_worker_len(&solver_registry).await?;
+    assert_eq!(worker_len, 1, "Incorrect worker length");
+
+    let workers = get_workers(&solver_registry, 0, 10).await?;
+    assert_eq!(workers.len(), 1, "Incorrect number of workers");
+    assert_eq!(workers[0].pool_id, 0, "Incorrect worker pool ID");
+    assert_eq!(
+        workers[0].checksum, CHECKSUM_ALICE,
+        "Incorrect worker checksum"
+    );
+    assert_eq!(
+        workers[0].compose_hash, COMPOSE_HASH,
+        "Incorrect worker compose hash"
+    );
+
+    let worker_ping_timeout_ms: u64 = get_worker_ping_timeout_ms(&solver_registry).await?;
+    assert_eq!(
+        worker_ping_timeout_ms, DEFAULT_WORKER_PING_TIMEOUT_MS,
+        "Incorrect worker ping timeout"
+    );
+
     println!("Test passed: Worker registration and pool setup completed successfully");
 
     Ok(())
@@ -87,7 +128,7 @@ async fn test_worker_registration_with_invalid_tee_data() -> Result<(), Box<dyn 
 
     // Setup test environment
     let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -123,6 +164,55 @@ async fn test_worker_registration_with_invalid_tee_data() -> Result<(), Box<dyn 
 }
 
 #[tokio::test]
+async fn test_worker_registration_with_invalid_app_compose_json()
+-> Result<(), Box<dyn std::error::Error>> {
+    println!("Starting test for worker registration with invalid app_compose JSON...");
+    let sandbox = near_workspaces::sandbox().await?;
+
+    // Setup test environment
+    let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
+
+    // Create a liquidity pool
+    create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
+
+    // Approve compose hash
+    approve_compose_hash(&owner, &solver_registry).await?;
+
+    // Create invalid TCB info with malformed app_compose JSON
+    // Parse the valid TCB info and modify app_compose to be invalid JSON
+    let mut tcb_info: serde_json::Value = serde_json::from_str(TCB_INFO_ALICE)?;
+    tcb_info["app_compose"] = serde_json::Value::String("invalid json {".to_string());
+    let invalid_tcb_info = serde_json::to_string(&tcb_info)?;
+
+    // Try to register worker with invalid app_compose JSON
+    println!("Attempting to register worker with invalid app_compose JSON...");
+    let result = register_worker(
+        &alice,
+        &solver_registry,
+        0,
+        QUOTE_HEX_ALICE,
+        QUOTE_COLLATERAL_ALICE,
+        CHECKSUM_ALICE,
+        &invalid_tcb_info,
+    )
+    .await?;
+
+    // Registration should fail with invalid app_compose JSON
+    assert!(
+        !result.is_success(),
+        "Worker registration should fail with invalid app_compose JSON"
+    );
+
+    let error = result.into_result().unwrap_err();
+    println!("Expected error received: {error:?}");
+
+    println!("Test passed: Worker registration properly validates app_compose JSON");
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn test_worker_registration_requires_sufficient_deposit()
 -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting test for worker registration requires sufficient deposit...");
@@ -130,7 +220,7 @@ async fn test_worker_registration_requires_sufficient_deposit()
 
     // Setup test environment
     let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -176,7 +266,7 @@ async fn test_worker_registration_without_compose_hash_approval()
 
     // Setup test environment
     let (wnear, usdc, _owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -206,7 +296,7 @@ async fn test_approve_compose_hash_with_non_owner() -> Result<(), Box<dyn std::e
 
     // Setup test environment
     let (wnear, usdc, _owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -242,7 +332,7 @@ async fn test_worker_registration_with_invalid_pool_id() -> Result<(), Box<dyn s
 
     // Setup test environment
     let (wnear, usdc, owner, alice, _bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool (pool_id = 0)
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -275,7 +365,7 @@ async fn test_multiple_pools_worker_registration() -> Result<(), Box<dyn std::er
 
     // Setup test environment
     let (wnear, usdc, owner, alice, bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create multiple liquidity pools
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
@@ -350,7 +440,7 @@ async fn test_worker_registration_edge_cases() -> Result<(), Box<dyn std::error:
 
     // Setup test environment
     let (wnear, usdc, owner, alice, bob, _mock_intents, solver_registry) =
-        setup_test_environment(&sandbox, 10 * 60 * 1000).await?;
+        setup_test_environment(&sandbox, DEFAULT_WORKER_PING_TIMEOUT_MS).await?;
 
     // Create a liquidity pool
     create_liquidity_pool(&solver_registry, &wnear, &usdc).await?;
